@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+    <title>AnyTv Web</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #141414;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .button-container {
+            text-align: center;
+        }
+        .link-button {
+            display: inline-flex;
+            width: 100px;
+            height: 100px;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+            padding: 20px 40px;
+            font-size: 18px;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .link-button:hover {
+            transform: scale(1.05); /* Slight zoom effect on hover */
+        }
+        .link-button.animet {
+            background: linear-gradient(45deg, #e50914, #f5555d); /* Gradient for Animet */
+        }
+        .link-button.animet:hover {
+            background: linear-gradient(45deg, #f40612, #e50914); /* Reverse gradient on hover */
+        }
+        .link-button.phimmoi {
+            background: linear-gradient(45deg, #1e90ff, #201cee); /* Gradient for Phimmoi */
+        }
+        .link-button.phimmoi:hover {
+            background: linear-gradient(45deg, #1c86ee, #1e90ff); /* Reverse gradient on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="button-container">
+        <a href="https://anime4.site" class="link-button animet">Animet</a>
+        <a href="https://phimmoichillc.net" class="link-button phimmoi">Phimmoi</a>
+    </div>
+</body>
+</html>
