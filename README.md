@@ -3,6 +3,8 @@
 ## Description
 A script to make simple UI for any movie website.
 
+![Screenshot](./img/Screenshot1.png "Screenshot")
+
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
