@@ -2,24 +2,36 @@ console.log("Start");
 
 const MAIN_TEMPLATE = /* html */ `
     <div class="h-main-container">
-        <div id="main-screen" style="display: none">
+        <div id="main-screen">
             <h2 class="category-header">Phổ biến</h2>
             <div id="popular-movies" class="movie-list"></div>
             <h2 class="category-header">Mới cập nhật</h2>
             <div id="latest-movies" class="movie-list"></div>
         </div>
-        <div id="detail-movie-screen">
-            <div class="detail-movie-info">
-                <div id="detail-movie-bg"></div>
-                <img id="detail-movie-image">
-                <div id="detail-movie-title"></div>
-                <div id="detail-movie-genres"></div>
-                <div id="detail-movie-description"></div>
+        <div id="detail-movie-screen" style="display: none">
+            <div class="detail-movie-header">
+                <button onclick="closeDetail()">Close</button>
             </div>
-            <div class="episode-list"></div>
+            <div class="detail-movie-container">
+                <div class="detail-movie-info">
+                    <div id="detail-movie-bg"></div>
+                    <img id="detail-movie-image">
+                    <div id="detail-movie-title"></div>
+                    <div id="detail-movie-genres"></div>
+                    <div class="detail-movive-action">
+                        <button>Yêu thích</button>
+                    </div>
+                    <div id="detail-movie-description"></div>
+                </div>
+                <div class="episode-list"></div>
+            </div>
         </div>
 
-        <div id="player-screen" style="display: none">
+        <div id="player-screen" class="float-movie-player" style="display: none">
+            <div class="player-header">
+                <button onclick="closePlayer()">Close</button>
+            </div>
+            <iframe id="player-iframe" src="" class="player-iframe"  frameborder="0"></iframe>
         </div>
     </div>
 `;
@@ -30,6 +42,12 @@ const MOVIE_CARD_TEMPLATE = /* html */ `
   <p class="card-badge">{{latestEpisode}}</p>
   <div class="movie-title">{{title}}</div>
   <div class="movie-genres">{{genres}}</div>
+</div>
+`;
+
+const EPISODE_TEMPLATE = /* html*/ `
+<div class="movie-episode">
+    <div class="movie-episode-title">{{title}}</div>
 </div>
 `;
 
@@ -118,9 +136,19 @@ const STYLES = /* css */ `
     }
 
     #detail-movie-screen {
-        display: flex;
         width: 100vw;
         height: 100vh;
+    }
+
+    .detail-movie-header {
+        height: 36px;
+        overflow: hidden;
+    }
+
+    .detail-movie-container {
+        display: flex;
+        width: 100vw;
+        height: calc(100vh - 36px);
     }
 
     .detail-movie-info {
@@ -149,6 +177,39 @@ const STYLES = /* css */ `
     }
     #detail-movie-genres {
         text-align: center;
+    }
+
+    .episode-list {
+        flex: 1 1 auto;
+        padding: 1em;
+        overflow-y: auto;
+    }
+    .movie-episode {
+        height: 56px;
+    }
+    .movie-episode-title {
+        font: 24px;
+    }
+
+    .float-movie-player {
+        background: yellowgreen;
+        position: absolute;
+        top: 10vh;
+        left: 10vw;
+        width: 80vw;
+        height: 80vh;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .player-header {
+        height: 36px;
+        overflow: hidden;
+    }
+    .player-iframe {
+        width: 100%;
+        height: calc(100% - 36px);
+        position: absolute;
     }
 `;
 
@@ -291,7 +352,6 @@ class WebView {
 
     async loadUrl(url) {
         console.log("Loading:", url);
-        alert("Loading:" + url);
         this.iframe.src = url;
         return await new Promise((resolve, reject) => {
             setTimeout(() => {                
@@ -436,7 +496,6 @@ function createDom(content) {
     return templateDiv.firstElementChild;
 }
 
-
 // Add the styles to the document
 const styleTag = document.createElement('style');
 styleTag.textContent = STYLES;
@@ -450,18 +509,37 @@ document.body.appendChild(templateDiv.firstElementChild);
 var extension = new Animet();
 var engine = new Engine(extension);
 
+const mainScreenDiv = document.getElementById("main-screen");
+const detailScreenDiv = document.getElementById("detail-movie-screen");
+const playerScreenDiv = document.getElementById("player-screen");
+
+function closePlayer() {
+    playerScreenDiv.style.display = 'none';
+    document.getElementById("player-iframe").src = '';
+}
+
+function closeDetail() {
+    closePlayer();
+    detailScreenDiv.style.display = 'none';
+    mainScreenDiv.style.display = 'block';
+}
+
 function showLastestMovies() {
     engine.getLatestMovies().then(movies => {
-        console.log("Results:");
+        // console.log("Results:");
 
-        console.log(movies);
-        console.log(engine);
+        // console.log(movies);
+        // console.log(engine);
 
         const movieListDiv = document.getElementById("latest-movies");
         movieListDiv.innerHTML = '';
         engine.latestMovies.forEach(movie => {
             const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
-            movieListDiv.appendChild(createDom(cardContent));
+            const cardDom = createDom(cardContent);
+            cardDom.addEventListener('click', (e) => {
+                showDetailMovie(movie);
+            })
+            movieListDiv.appendChild(cardDom);
         });
 
         movieListDiv.appendChild(createDom(`<button onclick="loadLastestMovies()">Load more</button>`))
@@ -470,54 +548,92 @@ function showLastestMovies() {
 
 function showPopularMovies() {
     engine.getPopularMovies().then(movies => {
-        console.log("Results:");
+        // console.log("Results:");
 
-        console.log(movies);
-        console.log(engine);
+        // console.log(movies);
+        // console.log(engine);
 
         const movieListDiv = document.getElementById("popular-movies");
         movieListDiv.innerHTML = '';
         engine.popularMovies.forEach(movie => {
             const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
-            movieListDiv.appendChild(createDom(cardContent));
+            const cardDom = createDom(cardContent);
+            cardDom.addEventListener('click', (e) => {
+                showDetailMovie(movie);
+            })
+            movieListDiv.appendChild(cardDom);
         })
     });
 }
 
-const bMovie = {
-    "latestEpisode": null,
-    "title": "Kusuriya no Hitorigoto",
-    "description": "",
-    "genres": "",
-    "movieUrl": "https://anime4.site/phim-kusuriya-no-hitorigoto-5261.html",
-    "cardImageUrl": "https://api.anime3s.com/upload/images/2023/08/kusuriya-no-hitorigoto-thumbnail.jpg",
-    "backgroundImageUrl": "https://api.anime3s.com/upload/images/2023/08/kusuriya-no-hitorigoto-thumbnail.jpg"
+// const bMovie = {
+//     "latestEpisode": null,
+//     "title": "Kusuriya no Hitorigoto",
+//     "description": "",
+//     "genres": "",
+//     "movieUrl": "https://anime4.site/phim-kusuriya-no-hitorigoto-5261.html",
+//     "cardImageUrl": "https://api.anime3s.com/upload/images/2023/08/kusuriya-no-hitorigoto-thumbnail.jpg",
+//     "backgroundImageUrl": "https://api.anime3s.com/upload/images/2023/08/kusuriya-no-hitorigoto-thumbnail.jpg"
+// }
+
+function showDetailMovie(bMovie) {
+    mainScreenDiv.style.display = 'none';
+    detailScreenDiv.style.display = 'block';
+
+    engine.getMovieDetail(bMovie).then(detailMovie => {
+        console.log(detailMovie);
+        const movieDetailDiv = document.getElementById('detail-movie-screen');
+        const episodeListDiv = document.querySelector(".episode-list");
+
+        movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
+        movieDetailDiv.querySelector("#detail-movie-image").src = detailMovie.cardImageUrl;
+        movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
+        movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
+        movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
+
+        episodeListDiv.innerHTML = '';
+        detailMovie.episodeList?.forEach(episode => {
+            const eleContent = fillTemplate(EPISODE_TEMPLATE, {
+                title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
+            });
+            const eleDom = createDom(eleContent);
+            eleDom.addEventListener('click', () => {
+                showMoviePlayer(detailMovie, episode);
+            })
+            episodeListDiv.appendChild(eleDom);
+        });
+
+    });
 }
 
-engine.getMovieDetail(bMovie).then(detailMovie => {
-    console.log(detailMovie);
-    const movieDetailDiv = document.getElementById('detail-movie-screen');
-    const episodeListDiv = document.querySelector(".episode-list");
+function showMoviePlayer(movie, episode){
+    playerScreenDiv.style.display = 'block';
+    const playerIframe = document.getElementById("player-iframe");
+    playerIframe.src = episode.url;
+}
 
-    movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
-    movieDetailDiv.querySelector("#detail-movie-image").src = detailMovie.cardImageUrl;
-    movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
-    movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
-    movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
-
-    detailMovie.episodeList?.forEach(episode => {
-        
-    })
-})
-
-// showLastestMovies();
-// showPopularMovies();
+showLastestMovies();
+showPopularMovies();
 
 
+
+// Run in all frame script
 
 // Remove ads
 setInterval(() => {
     while (document.body.nextSibling) {
         document.body.nextSibling.remove();
     }
+}, 1000);
+
+// Remove video ads
+setInterval(() => {
+    Array.from(document.getElementsByTagName("video")).forEach((element) => {
+        if (element.duration < 120 && element.currentTime < element.duration){
+            console.log("Skipped an ads!!!!");
+            element.muted = true;
+            element.volume = 0;
+            element.currentTime = element.duration + 1;
+        }
+    });
 }, 1000);
