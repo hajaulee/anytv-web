@@ -62,6 +62,7 @@ const MAIN_TEMPLATE = /* html */ `
             </div>
             <iframe id="player-iframe" src="" class="player-iframe"  frameborder="0"></iframe>
         </div>
+        <div id="snackbar">Some text some message..</div>
     </div>
 `;
 
@@ -241,6 +242,13 @@ const STYLES = /* css */ `
     .movie-episode-title {
         font: 24px;
     }
+    .movie-episode-watched {
+        opacity: 0.5;
+    }
+    .movie-episode-watching {
+        font-weight: bold;
+        color: lightgreen;
+    }
 
     .float-movie-player {
         position: absolute;
@@ -289,6 +297,48 @@ const STYLES = /* css */ `
         align-items: center;
         transform: translateY(-50%); // TODO: Fix button not same top with other element
     }
+
+    #snackbar {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        font-size: 17px;
+      }
+      
+      #snackbar.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      }
+      
+      @-webkit-keyframes fadein {
+        from {bottom: 0; opacity: 0;} 
+        to {bottom: 30px; opacity: 1;}
+      }
+      
+      @keyframes fadein {
+        from {bottom: 0; opacity: 0;}
+        to {bottom: 30px; opacity: 1;}
+      }
+      
+      @-webkit-keyframes fadeout {
+        from {bottom: 30px; opacity: 1;} 
+        to {bottom: 0; opacity: 0;}
+      }
+      
+      @keyframes fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
+      }
 `;
 
 
@@ -488,6 +538,15 @@ class Engine {
         return movieInPool;
     }
 
+    updateMovieList(currentList, newData){
+        newData.forEach(movie => {
+            if (!currentList.some(m => m.title == movie.title)){
+                movie = this.updateMovie(movie);
+                currentList.push(movie);
+            }
+        })
+    }
+
     async getLatestMovies() {
         const promise = new Promise((resolve, reject) => {
             this.currentLatestMoviesPage++;
@@ -503,7 +562,7 @@ class Engine {
 
                 // Emit result
                 console.log(`Loaded ${movieList.length} latest movies.`);
-                this.latestMovies = this.latestMovies.concat(movieList).map(movie => this.updateMovie(movie));
+                this.updateMovieList(this.latestMovies, movieList);
 
                 webView.destroy();
                 resolve(this.latestMovies);
@@ -528,7 +587,7 @@ class Engine {
 
                 // Emit result
                 console.log(`Loaded ${movieList.length} popular movies.`);
-                this.popularMovies = this.popularMovies.concat(movieList).map(movie => this.updateMovie(movie));
+                this.updateMovieList(this.popularMovies, movieList);
 
                 webView.destroy();
                 resolve(this.popularMovies);
@@ -543,6 +602,7 @@ class Engine {
             if (keyword != this.currentSearchKeyword){
                 this.currentSearchKeyword = keyword;
                 this.currentSearchMoviesPage = 0;
+                this.searchMovies = [];
             }
             this.currentPopularMoviesPage++;
             const webView = new WebView();
@@ -557,8 +617,7 @@ class Engine {
 
                 // Emit result
                 console.log(`Loaded ${movieList.length} popular movies.`);
-                this.searchMovies = this.searchMovies.concat(movieList).map(movie => this.updateMovie(movie));
-
+                this.updateMovieList(this.searchMovies, movieList);
                 webView.destroy();
                 resolve(this.searchMovies);
             }
@@ -668,6 +727,13 @@ function createDom(content) {
     const templateDiv = document.createElement('div');
     templateDiv.innerHTML = content;
     return templateDiv.firstElementChild;
+}
+
+function toastMsg(msg) {
+    var x = document.getElementById("snackbar");
+    x.className = "show";
+    x.innerHTML = msg;
+    setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 }
 
 if (location.host == 'anime4.site') {
@@ -790,6 +856,7 @@ if (location.host == 'anime4.site') {
 
         function showSearchResultMovies() {
             const keyword = document.getElementById('search-keyword-input').value;
+            toastMsg("Tìm kiếm: " + keyword);
             engine.getSearchMovies(keyword).then(movies => {
                 // console.log("Results:");
 
@@ -865,32 +932,40 @@ if (location.host == 'anime4.site') {
                     const eleContent = fillTemplate(EPISODE_TEMPLATE, {
                         title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
                     });
-                    const eleDom = createDom(eleContent);
-                    eleDom.addEventListener('click', () => {
+                    const episodeItem = createDom(eleContent);
+                    if (Number(episode.title) < Number(detailMovie.watchingEpisode)){
+                        episodeItem.classList.add("movie-episode-watched")
+                    }
+                    if (episode.title == detailMovie.watchingEpisode){
+                        episodeItem.classList.add("movie-episode-watching")
+                    }
+                    episodeItem.addEventListener('click', () => {
                         showMoviePlayer(detailMovie, episode);
                     })
-                    episodeListDiv.appendChild(eleDom);
+                    episodeListDiv.appendChild(episodeItem);
                 });
 
             });
         }
 
         function showMoviePlayer(movie, episode){
+            movie.watchingEpisode = episode.title;
+            engine.saveFavoriteMovies();
+            // Update displaying watching episode
+            showDetailMovie(movie);
+
             playerScreenDiv.style.display = 'block';
             const playerIframe = document.getElementById("player-iframe");
             playerIframe.src = episode.url;
 
             const playerTitleDiv = document.getElementById("player-title");
             playerTitleDiv.innerHTML = `${movie.title} - ${episode.title}`;
-
-            movie.watchingEpisode = episode.title;
-            engine.saveFavoriteMovies();
         }
 
         showFavoriteMovies();
         showLastestMovies();
         showPopularMovies();
-
+        toastMsg("Đang tải danh sách phim");
     }
 
     // Run in all frame script
