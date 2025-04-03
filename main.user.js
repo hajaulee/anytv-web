@@ -12,6 +12,7 @@ const MAIN_TEMPLATE = /* html */ `
     <div class="h-main-container">
         <div id="main-screen">
             <div class="header">
+                <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
                 <span style="flex: 1 1 auto"></span>
                 <button class="icon-button" onclick="openSearch()">🔍</button>
             </div>
@@ -281,7 +282,7 @@ const STYLES = /* css */ `
         height: 34px;
         background-color: transparent;
         font-size: 16px;
-        width: fit-content;
+        width: 34px;
         padding: 0;
         margin: 0;
     }
