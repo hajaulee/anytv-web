@@ -66,7 +66,7 @@ const MAIN_TEMPLATE = /* html */ `
 `;
 
 const MOVIE_CARD_TEMPLATE = /* html */ `
-<div class="card-movie" style="width: calc({{thumbnailRatio}} * 25vh - 48px)">
+<div class="card-movie" style="width: calc({{thumbnailRatio}} * 25dvh - 48px)">
   <img src="{{cardImageUrl}}" alt="{{title}}"/>
   <p class="card-badge">{{latestEpisode}}</p>
   <div class="movie-title">{{title}}</div>
@@ -111,12 +111,9 @@ const STYLES = /* css */ `
 
     .movie-list {
         overflow-x: auto;
+        overflow-y: hidden;
         white-space: nowrap;
         height: 26dvh;
-    }
-
-    .movie-list {
-        overflow: auto; /* Enables scrolling */
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
     }
@@ -130,7 +127,7 @@ const STYLES = /* css */ `
     }
 
     .card-movie {
-        height: 25vh;
+        height: 25dvh;
         display: inline-block;
         position: relative;
         background-color: blue;
@@ -177,8 +174,8 @@ const STYLES = /* css */ `
     }
 
     #detail-movie-screen {
-        width: 100vw;
-        height: 100vh;
+        width: 100dvw;
+        height: 100dvh;
     }
 
     .header {
@@ -194,6 +191,7 @@ const STYLES = /* css */ `
         width: 100dvw;
         padding: 0 10px;
         height: calc(100dvh - 36px);
+        overflow-y: auto;
     }
 
     .detail-movie-container {
@@ -216,7 +214,7 @@ const STYLES = /* css */ `
         opacity: 0.5;
     }
     #detail-movie-image {
-        height: 33vh;
+        height: 33dvh;
         width: 100%;
         object-fit: contain;
     }
@@ -282,8 +280,8 @@ const STYLES = /* css */ `
 
     .load-more-button {
         font-size: 100px;
-        width: 16vh;
-        height: 25vh;
+        width: 16dvh;
+        height: 25dvh;
         background: #122332;
         border-radius: 10px !important;
         display: inline-flex;
