@@ -124,7 +124,7 @@ const STYLES = /* css */ `
     }
 
     .movie-list .card-movie {
-        margin-right: 2em;
+        margin-right: 1em;
     }
 
     .card-movie {
