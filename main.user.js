@@ -569,25 +569,31 @@ class Engine {
     async getMovieDetail(movie){
         const promise = new Promise((resolve, reject) => {
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(movie.movieUrl)
+            const webLoadingPromise = webView.loadUrl(movie.movieUrl);
+
+            const handleResults = (detailMovie, episodes) => {
+                detailMovie.episodeList = episodes;
+                if (!detailMovie.latestEpisode){
+                    detailMovie.latestEpisode = episodes[episodes.length - 1]?.title;
+                }
+                this.saveFavoriteMovies();
+
+                webView.destroy();
+                resolve(detailMovie);
+            };
+
             webLoadingPromise.then(doc => {
                 const detailMovie = this.updateMovie({...movie, ...extension.movieDetailParse(doc)});
                 const firstEpisodeUrl = extension.firstEpisodeUrl(doc)
                 if (!firstEpisodeUrl) {
-                    const episodes = this.getMovieEpisodes(doc, null, true)
-                    detailMovie.episodeList = episodes;
-                    webView.destroy();
-                    resolve(detailMovie)
+                    const episodes = this.getMovieEpisodes(doc, null, true);
+
+                    handleResults(detailMovie, episodes);
                 } else {
                     const webLoadingPromise1 = webView.loadUrl(firstEpisodeUrl);
                     webLoadingPromise1.then(doc1 => {                        
                         var episodes = this.getMovieEpisodes(doc1, firstEpisodeUrl, true)
-                        detailMovie.episodeList = episodes;
-                        console.log(episodes);
-                        
-                        webView.destroy();
-                        resolve(detailMovie)
-                        
+                        handleResults(detailMovie, episodes);
                     });
                 }
                 
