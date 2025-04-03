@@ -1,4 +1,12 @@
-console.log("Start");
+// ==UserScript==
+// @name         Simple player
+// @namespace    http://hajaulee.github.io
+// @version      1.0
+// @description  A simpler player for movie webpage.
+// @author       Heille
+// @match        https://*/*
+// @grant        none
+// ==/UserScript==
 
 const MAIN_TEMPLATE = /* html */ `
     <div class="h-main-container">
@@ -53,14 +61,18 @@ const EPISODE_TEMPLATE = /* html*/ `
 
 const STYLES = /* css */ `
 
-    body {
+    html, body {
         overflow: hidden;
+        width: 100dvw;
+        height: 100dvh;
+        padding: 0;
+        margin: 0;
     }
 
     .h-main-container {
         position: fixed;
-        width: 100vw;
-        height: 100vh;
+        width: 100dvw;
+        height: 100dvh;
         z-index: 999999;
         top: 0;
         left: 0;
@@ -147,8 +159,8 @@ const STYLES = /* css */ `
 
     .detail-movie-container {
         display: flex;
-        width: 100vw;
-        height: calc(100vh - 36px);
+        width: 100dvw;
+        height: calc(100dvh - 36px);
     }
 
     .detail-movie-info {
@@ -194,10 +206,10 @@ const STYLES = /* css */ `
     .float-movie-player {
         background: yellowgreen;
         position: absolute;
-        top: 10vh;
-        left: 10vw;
-        width: 80vw;
-        height: 80vh;
+        top: 10dvh;
+        left: 10dvw;
+        width: 80dvw;
+        height: 80dvh;
         border-radius: 20px;
         overflow: hidden;
     }
@@ -496,144 +508,139 @@ function createDom(content) {
     return templateDiv.firstElementChild;
 }
 
-// Add the styles to the document
-const styleTag = document.createElement('style');
-styleTag.textContent = STYLES;
-document.head.appendChild(styleTag);
+if (location.host == 'anime4.site') {
+    // MAIN FRAME
+    if (window.self == window.top) {
 
-// Add the template to the body
-const templateDiv = document.createElement('div');
-templateDiv.innerHTML = MAIN_TEMPLATE;
-document.body.appendChild(templateDiv.firstElementChild);
+        // Add the styles to the document
+        const styleTag = document.createElement('style');
+        styleTag.textContent = STYLES;
+        document.head.appendChild(styleTag);
 
-var extension = new Animet();
-var engine = new Engine(extension);
+        // Add the template to the body
+        const templateDiv = document.createElement('div');
+        templateDiv.innerHTML = MAIN_TEMPLATE;
+        document.body.appendChild(templateDiv.firstElementChild);
 
-const mainScreenDiv = document.getElementById("main-screen");
-const detailScreenDiv = document.getElementById("detail-movie-screen");
-const playerScreenDiv = document.getElementById("player-screen");
+        var extension = new Animet();
+        var engine = new Engine(extension);
 
-function closePlayer() {
-    playerScreenDiv.style.display = 'none';
-    document.getElementById("player-iframe").src = '';
-}
+        const mainScreenDiv = document.getElementById("main-screen");
+        const detailScreenDiv = document.getElementById("detail-movie-screen");
+        const playerScreenDiv = document.getElementById("player-screen");
 
-function closeDetail() {
-    closePlayer();
-    detailScreenDiv.style.display = 'none';
-    mainScreenDiv.style.display = 'block';
-}
-
-function showLastestMovies() {
-    engine.getLatestMovies().then(movies => {
-        // console.log("Results:");
-
-        // console.log(movies);
-        // console.log(engine);
-
-        const movieListDiv = document.getElementById("latest-movies");
-        movieListDiv.innerHTML = '';
-        engine.latestMovies.forEach(movie => {
-            const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
-            const cardDom = createDom(cardContent);
-            cardDom.addEventListener('click', (e) => {
-                showDetailMovie(movie);
-            })
-            movieListDiv.appendChild(cardDom);
-        });
-
-        movieListDiv.appendChild(createDom(`<button onclick="loadLastestMovies()">Load more</button>`))
-    });
-}
-
-function showPopularMovies() {
-    engine.getPopularMovies().then(movies => {
-        // console.log("Results:");
-
-        // console.log(movies);
-        // console.log(engine);
-
-        const movieListDiv = document.getElementById("popular-movies");
-        movieListDiv.innerHTML = '';
-        engine.popularMovies.forEach(movie => {
-            const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
-            const cardDom = createDom(cardContent);
-            cardDom.addEventListener('click', (e) => {
-                showDetailMovie(movie);
-            })
-            movieListDiv.appendChild(cardDom);
-        })
-    });
-}
-
-// const bMovie = {
-//     "latestEpisode": null,
-//     "title": "Kusuriya no Hitorigoto",
-//     "description": "",
-//     "genres": "",
-//     "movieUrl": "https://anime4.site/phim-kusuriya-no-hitorigoto-5261.html",
-//     "cardImageUrl": "https://api.anime3s.com/upload/images/2023/08/kusuriya-no-hitorigoto-thumbnail.jpg",
-//     "backgroundImageUrl": "https://api.anime3s.com/upload/images/2023/08/kusuriya-no-hitorigoto-thumbnail.jpg"
-// }
-
-function showDetailMovie(bMovie) {
-    mainScreenDiv.style.display = 'none';
-    detailScreenDiv.style.display = 'block';
-
-    engine.getMovieDetail(bMovie).then(detailMovie => {
-        console.log(detailMovie);
-        const movieDetailDiv = document.getElementById('detail-movie-screen');
-        const episodeListDiv = document.querySelector(".episode-list");
-
-        movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
-        movieDetailDiv.querySelector("#detail-movie-image").src = detailMovie.cardImageUrl;
-        movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
-        movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
-        movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
-
-        episodeListDiv.innerHTML = '';
-        detailMovie.episodeList?.forEach(episode => {
-            const eleContent = fillTemplate(EPISODE_TEMPLATE, {
-                title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
-            });
-            const eleDom = createDom(eleContent);
-            eleDom.addEventListener('click', () => {
-                showMoviePlayer(detailMovie, episode);
-            })
-            episodeListDiv.appendChild(eleDom);
-        });
-
-    });
-}
-
-function showMoviePlayer(movie, episode){
-    playerScreenDiv.style.display = 'block';
-    const playerIframe = document.getElementById("player-iframe");
-    playerIframe.src = episode.url;
-}
-
-showLastestMovies();
-showPopularMovies();
-
-
-
-// Run in all frame script
-
-// Remove ads
-setInterval(() => {
-    while (document.body.nextSibling) {
-        document.body.nextSibling.remove();
-    }
-}, 1000);
-
-// Remove video ads
-setInterval(() => {
-    Array.from(document.getElementsByTagName("video")).forEach((element) => {
-        if (element.duration < 120 && element.currentTime < element.duration){
-            console.log("Skipped an ads!!!!");
-            element.muted = true;
-            element.volume = 0;
-            element.currentTime = element.duration + 1;
+        function closePlayer() {
+            playerScreenDiv.style.display = 'none';
+            document.getElementById("player-iframe").src = '';
         }
-    });
-}, 1000);
+
+        function closeDetail() {
+            closePlayer();
+            detailScreenDiv.style.display = 'none';
+            mainScreenDiv.style.display = 'block';
+        }
+
+        function showLastestMovies() {
+            engine.getLatestMovies().then(movies => {
+                // console.log("Results:");
+
+                // console.log(movies);
+                // console.log(engine);
+
+                const movieListDiv = document.getElementById("latest-movies");
+                movieListDiv.innerHTML = '';
+                engine.latestMovies.forEach(movie => {
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
+                    const cardDom = createDom(cardContent);
+                    cardDom.addEventListener('click', (e) => {
+                        showDetailMovie(movie);
+                    })
+                    movieListDiv.appendChild(cardDom);
+                });
+
+                movieListDiv.appendChild(createDom(`<button onclick="loadLastestMovies()">Load more</button>`))
+            });
+        }
+
+        function showPopularMovies() {
+            engine.getPopularMovies().then(movies => {
+                // console.log("Results:");
+
+                // console.log(movies);
+                // console.log(engine);
+
+                const movieListDiv = document.getElementById("popular-movies");
+                movieListDiv.innerHTML = '';
+                engine.popularMovies.forEach(movie => {
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
+                    const cardDom = createDom(cardContent);
+                    cardDom.addEventListener('click', (e) => {
+                        showDetailMovie(movie);
+                    })
+                    movieListDiv.appendChild(cardDom);
+                })
+            });
+        }
+
+        function showDetailMovie(bMovie) {
+            mainScreenDiv.style.display = 'none';
+            detailScreenDiv.style.display = 'block';
+
+            engine.getMovieDetail(bMovie).then(detailMovie => {
+                console.log(detailMovie);
+                const movieDetailDiv = document.getElementById('detail-movie-screen');
+                const episodeListDiv = document.querySelector(".episode-list");
+
+                movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
+                movieDetailDiv.querySelector("#detail-movie-image").src = detailMovie.cardImageUrl;
+                movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
+                movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
+                movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
+
+                episodeListDiv.innerHTML = '';
+                detailMovie.episodeList?.forEach(episode => {
+                    const eleContent = fillTemplate(EPISODE_TEMPLATE, {
+                        title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
+                    });
+                    const eleDom = createDom(eleContent);
+                    eleDom.addEventListener('click', () => {
+                        showMoviePlayer(detailMovie, episode);
+                    })
+                    episodeListDiv.appendChild(eleDom);
+                });
+
+            });
+        }
+
+        function showMoviePlayer(movie, episode){
+            playerScreenDiv.style.display = 'block';
+            const playerIframe = document.getElementById("player-iframe");
+            playerIframe.src = episode.url;
+        }
+
+        showLastestMovies();
+        showPopularMovies();
+
+    }
+
+    // Run in all frame script
+
+    // Remove ads
+    setInterval(() => {
+        while (document.body.nextSibling) {
+            document.body.nextSibling.remove();
+        }
+    }, 1000);
+
+    // Remove video ads
+    setInterval(() => {
+        Array.from(document.getElementsByTagName("video")).forEach((element) => {
+            if (element.duration < 120 && element.currentTime < element.duration){
+                console.log("Skipped an ads!!!!");
+                element.muted = true;
+                element.volume = 0;
+                element.currentTime = element.duration + 1;
+            }
+        });
+    }, 1000);
+}
