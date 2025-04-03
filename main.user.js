@@ -26,7 +26,7 @@ const MAIN_TEMPLATE = /* html */ `
         </div>
         <div id="search-screen" style="display: none">
             <div class="header">
-                <button class="icon-button" onclick="closeSearch()">🡠</button>
+                <button class="icon-button" onclick="closeSearch()">〈</button>
                 <input id="search-keyword-input" placeholder="Abc..." class="input-search" autofocus onchange="showSearchResultMovies()">
                 <button class="icon-button" onclick="showSearchResultMovies()">🔍</button>
             </div>
@@ -37,7 +37,7 @@ const MAIN_TEMPLATE = /* html */ `
         </div>
         <div id="detail-movie-screen" style="display: none">
             <div class="header detail-movie-header">
-                <button class="icon-button" onclick="closeDetail()">🡠</button>
+                <button class="icon-button" onclick="closeDetail()">〈</button>
             </div>
             <div class="content-container detail-movie-container">
                 <div class="detail-movie-info">
@@ -57,7 +57,7 @@ const MAIN_TEMPLATE = /* html */ `
 
         <div id="player-screen" class="float-movie-player" style="display: none">
             <div class="header player-header">
-                <button class="icon-button" onclick="closePlayer()">🡠</button>
+                <button class="icon-button" onclick="closePlayer()">〈</button>
                 <span id="player-title"></span>
             </div>
             <iframe id="player-iframe" src="" class="player-iframe"  frameborder="0"></iframe>
@@ -272,7 +272,7 @@ const STYLES = /* css */ `
         border-radius: 20px !important;
         height: 34px;
         background-color: transparent;
-        font-size: 24px;
+        font-size: 16px;
         width: fit-content;
         padding: 0;
         margin: 0;
@@ -739,7 +739,7 @@ if (location.host == 'anime4.site') {
                     movieListDiv.appendChild(cardDom);
                 });
 
-                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="loadLastestMovies()">+</button>`))
+                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="showLastestMovies()">+</button>`))
             });
         }
 
@@ -761,7 +761,7 @@ if (location.host == 'anime4.site') {
                     movieListDiv.appendChild(cardDom);
                 });
 
-                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="loadPopularMovies()">+</button>`))
+                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="showPopularMovies()">+</button>`))
 
             });
 
