@@ -8,8 +8,14 @@
 // @grant        none
 // ==/UserScript==
 
+/* ============================
+ * CẤU HÌNH VÀ TEMPLATE HTML
+ * ============================ */
+
+// Template chính cho giao diện người dùng
 const MAIN_TEMPLATE = /* html */ `
     <div class="h-main-container">
+        <!-- Màn hình chính -->
         <div id="main-screen">
             <div class="header">
                 <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
@@ -25,10 +31,12 @@ const MAIN_TEMPLATE = /* html */ `
                 <div id="latest-movies" class="movie-list"></div>
             </div>
         </div>
+
+        <!-- Màn hình tìm kiếm -->
         <div id="search-screen" style="display: none">
             <div class="header">
                 <button class="icon-button" onclick="closeSearch()">〈</button>
-                <input id="search-keyword-input" placeholder="Abc..." class="input-search" autofocus onchange="showSearchResultMovies()">
+                <input id="search-keyword-input" placeholder="Nhập từ khóa..." class="input-search" autofocus onchange="showSearchResultMovies()">
                 <button class="icon-button" onclick="showSearchResultMovies()">🔍</button>
             </div>
             <div class="content-container">
@@ -36,6 +44,8 @@ const MAIN_TEMPLATE = /* html */ `
                 <div id="search-movies" class="movie-list"></div>
             </div>
         </div>
+
+        <!-- Màn hình chi tiết phim -->
         <div id="detail-movie-screen" style="display: none">
             <div class="header detail-movie-header">
                 <button class="icon-button" onclick="closeDetail()">〈</button>
@@ -58,17 +68,21 @@ const MAIN_TEMPLATE = /* html */ `
             </div>
         </div>
 
+        <!-- Màn hình trình phát phim -->
         <div id="player-screen" class="float-movie-player" style="display: none">
             <div class="header player-header">
                 <button class="icon-button" onclick="closePlayer()">〈</button>
                 <span id="player-title"></span>
             </div>
-            <iframe id="player-iframe" src="" class="player-iframe"  frameborder="0"></iframe>
+            <iframe id="player-iframe" src="" class="player-iframe" frameborder="0"></iframe>
         </div>
+
+        <!-- Snackbar thông báo -->
         <div id="snackbar">Some text some message..</div>
     </div>
 `;
 
+// Template cho thẻ phim
 const MOVIE_CARD_TEMPLATE = /* html */ `
 <div class="card-movie" style="width: calc({{thumbnailRatio}} * 25dvh - 48px)">
   <img src="{{cardImageUrl}}" alt="{{title}}"/>
@@ -78,14 +92,19 @@ const MOVIE_CARD_TEMPLATE = /* html */ `
 </div>
 `;
 
-const EPISODE_TEMPLATE = /* html*/ `
+// Template cho tập phim
+const EPISODE_TEMPLATE = /* html */ `
 <div class="movie-episode">
     <div class="movie-episode-title">{{title}}</div>
 </div>
 `;
 
-const STYLES = /* css */ `
+/* ============================
+ * STYLES (CSS)
+ * ============================ */
 
+const STYLES = /* css */ `
+    /* CSS cho giao diện */
     html, body {
         overflow: hidden;
         width: 100dvw;
@@ -360,6 +379,9 @@ const STYLES = /* css */ `
       }
 `;
 
+/* ============================
+ * LỚP CƠ SỞ VÀ NGUỒN DỮ LIỆU
+ * ============================ */
 
 class BaseSource {
 
@@ -419,7 +441,7 @@ class Animet extends BaseSource {
         const title = e.querySelector(".title-item")?.textContent?.trim()
         const episodeText = e.querySelector(".mli-eps")?.textContent?.trim()
 
-        const match = episodeText?.match(/\d+$/);
+        const match = episodeText?.match(/\d+/);
         const episodeNum = match ? parseInt(match[0], 10) : null;
 
         return {
@@ -515,7 +537,7 @@ class Phimmoi extends BaseSource {
         const imgUrl = e.querySelector("img").getAttribute("src")
         const episodeText = e.querySelector(".label").textContent?.trim()
         
-        const match = episodeText?.match(/\d+$/);
+        const match = episodeText?.match(/\d+/);
         const episodeNum = match ? parseInt(match[0], 10) : null;
 
         return {
@@ -570,7 +592,15 @@ class Phimmoi extends BaseSource {
     episodesParse(doc) {
         if (doc.querySelector("#box-player") != null) {
             if (doc.querySelector("#list_episodes") != null) {
-                return [...doc.querySelectorAll("#list_episodes a")].map(it => ({title: it.textContent?.trim(), url: it.getAttribute("href") }));
+                return [...doc.querySelectorAll("#list_episodes a")].map(it => {
+                    const episodeText = it.textContent?.trim();
+                    const match = episodeText?.match(/\d+/);
+                    const episodeNum = match ? parseInt(match[0], 10) : null;
+                    return {
+                        title: episodeNum, 
+                        url: it.getAttribute("href") 
+                    }
+                });
             } else {
                 return [{title: "Xem ngay", url: doc.baseUri()}]
             }
