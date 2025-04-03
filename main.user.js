@@ -39,6 +39,8 @@ const MAIN_TEMPLATE = /* html */ `
         <div id="detail-movie-screen" style="display: none">
             <div class="header detail-movie-header">
                 <button class="icon-button" onclick="closeDetail()">〈</button>
+                <span style="flex: 1 1 auto"></span>
+                <button class="icon-button" onclick="refreshMovieDetail()">⟳</button>
             </div>
             <div class="content-container detail-movie-container">
                 <div class="detail-movie-info">
@@ -46,9 +48,9 @@ const MAIN_TEMPLATE = /* html */ `
                     <img id="detail-movie-image">
                     <div id="detail-movie-title"></div>
                     <div id="detail-movie-genres"></div>
-                    <div class="detail-movive-action">
-                        <button id="add-favorite">Yêu thích</button>
-                        <button id="remove-favorite" style="display: none">Bỏ thích</button>
+                    <div class="detail-movie-action-container">
+                        <button id="add-favorite" class="detail-movie-action">Yêu thích</button>
+                        <button id="remove-favorite" class="detail-movie-action" style="display: none">Bỏ thích</button>
                     </div>
                     <div id="detail-movie-description"></div>
                 </div>
@@ -173,6 +175,9 @@ const STYLES = /* css */ `
         padding: 0;
         margin: 0;
         margin-left: 10px;
+        outline: none;
+        border: none;
+        width: 100%;
     }
 
     #detail-movie-screen {
@@ -227,9 +232,21 @@ const STYLES = /* css */ `
     #detail-movie-genres {
         text-align: center;
     }
-    .detail-movive-action {
+    .detail-movie-action-container {
         display: flex;
         justify-content: center;
+        padding: 5px;
+    }
+
+    .detail-movie-action {
+        background: #323243;
+        border: 0;
+        height: 40px;
+        border-radius: 5px;
+        padding: 5px 10px;
+        margin: 0;
+        line-height: 0;
+        font-size: 14px;
     }
 
     .episode-list {
@@ -285,6 +302,7 @@ const STYLES = /* css */ `
         width: 34px;
         padding: 0;
         margin: 0;
+        border: 0;
     }
 
     .load-more-button {
@@ -343,7 +361,7 @@ const STYLES = /* css */ `
 `;
 
 
-class BaseExtension {
+class BaseSource {
 
     name = "Base";
     thumbnailRatio = 0.75;
@@ -385,7 +403,7 @@ class BaseExtension {
     movieServerSelector() {return null}
 }
 
-class Animet extends BaseExtension {
+class Animet extends BaseSource {
 
     name = "Animet";
     thumbnailRatio = 0.75;
@@ -476,6 +494,100 @@ class Animet extends BaseExtension {
     }
 }
 
+class Phimmoi extends BaseSource {
+
+    name= "Phimmoi"
+    thumbnailRatio = 1.7
+    baseUrl = "https://phimmoichill.best";
+
+    // LATEST MOVIES
+    latestMovieUrl(page) {
+        return `${this.baseUrl}/list/phim-bo/page-${page}/`
+    }
+
+    latestMovieSelector() {
+        return ".list-film .item.small"
+    }
+
+    latestMovieFromElement(e) {
+        const movieUrl = e.querySelector("a").getAttribute("href")
+        const title = e.querySelector("h3").textContent?.trim()
+        const imgUrl = e.querySelector("img").getAttribute("src")
+        const episodeText = e.querySelector(".label").textContent?.trim()
+        
+        const match = episodeText?.match(/\d+$/);
+        const episodeNum = match ? parseInt(match[0], 10) : null;
+
+        return {
+            latestEpisode: episodeNum,
+            title: title,  //Title
+            description: "",
+            genres: '',
+            movieUrl: movieUrl,
+            cardImageUrl: imgUrl,  // Bg Image
+            backgroundImageUrl: imgUrl // Card image
+        }
+    }
+
+    // POPULAR MOVIES
+    popularMovieUrl(page) {
+        return `${this.baseUrl}/list/phim-hot/page-${page}/`
+    }
+
+    popularMovieSelector() {
+        return this.latestMovieSelector()
+    }
+
+    popularMovieFromElement(e) {
+        return this.latestMovieFromElement(e)
+    }
+
+    // SEARCH MOVIES
+    searchMovieUrl(keyword, page) {
+        return `${baseUrl}/tim-kiem/${keyword.replace(" ", "+")}/`
+    }
+
+    searchMovieSelector() {
+        return this.latestMovieSelector()
+    }
+
+    searchMovieFromElement(e) {
+        return this.latestMovieFromElement(e)
+    }
+
+    // MOVIE DETAIL
+    movieDetailParse(doc) {
+        const movie = {}
+        movie.description = doc.querySelector(".film-content")?.textContent?.trim() ?? ""
+        movie.genres = [...doc.querySelector(".entry-meta li:nth-child(4)")?.querySelectorAll("a")].map(it => it.textContent).join(", ")
+        return movie
+    }
+
+    firstEpisodeUrl(doc) {
+        return doc.querySelector(".film-info a").getAttribute("href")
+    }
+
+    episodesParse(doc) {
+        if (doc.querySelector("#box-player") != null) {
+            if (doc.querySelector("#list_episodes") != null) {
+                return [...doc.querySelectorAll("#list_episodes a")].map(it => ({title: it.textContent?.trim(), url: it.getAttribute("href") }));
+            } else {
+                return [{title: "Xem ngay", url: doc.baseUri()}]
+            }
+        }
+        return []
+
+    }
+
+    episodeSelector() {
+        return ""
+    }
+
+    episodeFromElement(e) {
+        return {title: "", url: ""}
+    }
+}
+
 
 
 class WebView {
@@ -505,11 +617,13 @@ class WebView {
 
 
 class Engine {
-    extension = null;
+    source = null;
     currentLatestMoviesPage = 0;
     currentPopularMoviesPage = 0;
     currentSearchMoviesPage = 0;
     currentSearchKeyword = null;
+
+    selectingMovie = null;
 
     moviePool = {};
 
@@ -518,13 +632,13 @@ class Engine {
     popularMovies = [];
     searchMovies = [];
 
-    constructor(extension) {
-        this.extension = extension;
+    constructor(source) {
+        this.source = source;
     }
 
     updateMovie(movie){
         const movieInPool = this.moviePool[movie.title] ?? movie;
-        movieInPool.thumbnailRatio = this.extension.thumbnailRatio;
+        movieInPool.thumbnailRatio = this.source.thumbnailRatio;
         if (movie.genres && !movieInPool.genres){
             movieInPool.genres = movie.genres;
         }
@@ -552,12 +666,12 @@ class Engine {
         const promise = new Promise((resolve, reject) => {
             this.currentLatestMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(extension.latestMovieUrl(this.currentLatestMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.latestMovieUrl(this.currentLatestMoviesPage));
             webLoadingPromise.then((doc) => {
-                var movieList = extension.latestMoviesParse(doc)
+                var movieList = this.source.latestMoviesParse(doc)
                 if (movieList == null) {
-                    movieList = [...doc.querySelectorAll(extension.latestMovieSelector())].filter(it => it).map(it => {
-                        return extension.latestMovieFromElement(it)
+                    movieList = [...doc.querySelectorAll(this.source.latestMovieSelector())].filter(it => it).map(it => {
+                        return this.source.latestMovieFromElement(it)
                     });
                 }
 
@@ -577,12 +691,12 @@ class Engine {
         const promise = new Promise((resolve, reject) => {
             this.currentPopularMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(extension.popularMovieUrl(this.currentPopularMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.popularMovieUrl(this.currentPopularMoviesPage));
             webLoadingPromise.then((doc) => {
-                var movieList = extension.popularMoviesParse(doc)
+                var movieList = this.source.popularMoviesParse(doc)
                 if (movieList == null) {
-                    movieList = [...doc.querySelectorAll(extension.popularMovieSelector())].filter(it => it).map(it => {
-                        return extension.popularMovieFromElement(it)
+                    movieList = [...doc.querySelectorAll(this.source.popularMovieSelector())].filter(it => it).map(it => {
+                        return this.source.popularMovieFromElement(it)
                     });
                 }
 
@@ -607,12 +721,12 @@ class Engine {
             }
             this.currentPopularMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(extension.searchMovieUrl(keyword, this.currentSearchMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, this.currentSearchMoviesPage));
             webLoadingPromise.then((doc) => {
-                var movieList = extension.searchMoviesParse(doc)
+                var movieList = this.source.searchMoviesParse(doc)
                 if (movieList == null) {
-                    movieList = [...doc.querySelectorAll(extension.searchMovieSelector())].filter(it => it).map(it => {
-                        return extension.searchMovieFromElement(it)
+                    movieList = [...doc.querySelectorAll(this.source.searchMovieSelector())].filter(it => it).map(it => {
+                        return this.source.searchMovieFromElement(it)
                     });
                 }
 
@@ -645,8 +759,8 @@ class Engine {
             };
 
             webLoadingPromise.then(doc => {
-                const detailMovie = this.updateMovie({...movie, ...extension.movieDetailParse(doc)});
-                const firstEpisodeUrl = extension.firstEpisodeUrl(doc)
+                const detailMovie = this.updateMovie({...movie, ...this.source.movieDetailParse(doc)});
+                const firstEpisodeUrl = this.source.firstEpisodeUrl(doc)
                 if (!firstEpisodeUrl) {
                     const episodes = this.getMovieEpisodes(doc, null, true);
 
@@ -670,10 +784,10 @@ class Engine {
         firstEpisodeUrl,
         contentPageFinished
     ){
-        var episodes = this.extension.episodesParse(doc)
+        var episodes = this.source.episodesParse(doc)
         if (!episodes?.length) {
-            episodes = [...doc.querySelectorAll(this.extension.episodeSelector())].filter(it => it).map(it => {
-                return this.extension.episodeFromElement(it)
+            episodes = [...doc.querySelectorAll(this.source.episodeSelector())].filter(it => it).map(it => {
+                return this.source.episodeFromElement(it)
             });
 
         }
@@ -737,7 +851,12 @@ function toastMsg(msg) {
     setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 }
 
-if (location.host == 'anime4.site') {
+const SUPPORTED_SOURCES = {
+    'anime4.site': new Animet(),
+    'phimmoichill.best': new Phimmoi()
+}
+
+if (SUPPORTED_SOURCES[location.host]) {
     // MAIN FRAME
     if (window.self == window.top) {
 
@@ -751,8 +870,8 @@ if (location.host == 'anime4.site') {
         templateDiv.innerHTML = MAIN_TEMPLATE;
         document.body.appendChild(templateDiv.firstElementChild);
 
-        var extension = new Animet();
-        var engine = new Engine(extension);
+        var source = SUPPORTED_SOURCES[location.host];
+        var engine = new Engine(source);
 
         const mainScreenDiv = document.getElementById("main-screen");
         const detailScreenDiv = document.getElementById("detail-movie-screen");
@@ -839,7 +958,6 @@ if (location.host == 'anime4.site') {
                 movies.forEach(movie => {
                     const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
                         ...movie, 
-                        thumbnailRatio: engine.extension.thumbnailRatio,
                         watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
                     });
                     const cardDom = createDom(cardContent);
@@ -882,7 +1000,9 @@ if (location.host == 'anime4.site') {
             });
         }
 
-        function showDetailMovie(bMovie) {
+        function showDetailMovie(bMovie, forceReload) {
+            engine.selectingMovie = bMovie;
+
             mainScreenDiv.style.display = 'none';
             searchScreenDiv.style.display = 'none';
             detailScreenDiv.style.display = 'block';
@@ -908,6 +1028,12 @@ if (location.host == 'anime4.site') {
                 engine.removeFavotiteMovie(bMovie);
                 addFavoriteButton.style.display = 'block';
                 removeFavoriteButton.style.display = 'none';
+            }
+
+            if (!forceReload){
+                if (bMovie.episodeList?.length == bMovie.latestEpisode){
+                    bMovie.detailLoaded = true;
+                }
             }
 
             const detailMoviePromise = bMovie.detailLoaded ? Promise.resolve(bMovie) : engine.getMovieDetail(bMovie);
@@ -949,6 +1075,14 @@ if (location.host == 'anime4.site') {
             });
         }
 
+        function refreshMovieDetail(){
+            toastMsg("Tải lại thông tin phim")
+            if (engine.selectingMovie){
+                engine.selectingMovie.detailLoaded = false;
+                showDetailMovie(engine.selectingMovie, true);
+            }
+        }
+
         function showMoviePlayer(movie, episode){
             movie.watchingEpisode = episode.title;
             engine.saveFavoriteMovies();
@@ -969,7 +1103,10 @@ if (location.host == 'anime4.site') {
         toastMsg("Đang tải danh sách phim");
     }
 
-    // Run in all frame script
+    /* Run in all frame script */
+
+    // Disable popup opening
+    window.open = console.log;
 
     // Remove ads
     setInterval(() => {
