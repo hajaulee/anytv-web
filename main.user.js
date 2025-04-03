@@ -112,6 +112,7 @@ const STYLES = /* css */ `
     .movie-list {
         overflow-x: auto;
         white-space: nowrap;
+        height: 26dvh;
     }
 
     .movie-list {
@@ -277,6 +278,18 @@ const STYLES = /* css */ `
         width: fit-content;
         padding: 0;
         margin: 0;
+    }
+
+    .load-more-button {
+        font-size: 100px;
+        width: 16vh;
+        height: 25vh;
+        background: #122332;
+        border-radius: 10px !important;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        transform: translateY(-50%); // TODO: Fix button not same top with other element
     }
 `;
 
@@ -728,7 +741,7 @@ if (location.host == 'anime4.site') {
                     movieListDiv.appendChild(cardDom);
                 });
 
-                movieListDiv.appendChild(createDom(`<button onclick="loadLastestMovies()">Load more</button>`))
+                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="loadLastestMovies()">+</button>`))
             });
         }
 
@@ -750,7 +763,7 @@ if (location.host == 'anime4.site') {
                     movieListDiv.appendChild(cardDom);
                 });
 
-                movieListDiv.appendChild(createDom(`<button onclick="loadPopularMovies()">Load more</button>`))
+                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="loadPopularMovies()">+</button>`))
 
             });
 
@@ -775,12 +788,13 @@ if (location.host == 'anime4.site') {
                     movieListDiv.appendChild(cardDom);
                 });
 
-                movieListDiv.appendChild(createDom(`<button onclick="showSearchResultMovies()">Load more</button>`))
+                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="showSearchResultMovies()">+</button>`))
             });
         }
 
         function showDetailMovie(bMovie) {
             mainScreenDiv.style.display = 'none';
+            searchScreenDiv.style.display = 'none';
             detailScreenDiv.style.display = 'block';
             detailScreenDiv.style.filter = 'blur(10px)';
 
