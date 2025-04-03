@@ -68,7 +68,7 @@ const MAIN_TEMPLATE = /* html */ `
 const MOVIE_CARD_TEMPLATE = /* html */ `
 <div class="card-movie" style="width: calc({{thumbnailRatio}} * 25dvh - 48px)">
   <img src="{{cardImageUrl}}" alt="{{title}}"/>
-  <p class="card-badge">{{latestEpisode}}</p>
+  <p class="card-badge">{{watchingEpisode}}{{latestEpisode}}</p>
   <div class="movie-title">{{title}}</div>
   <div class="movie-genres">{{genres}} &nbsp;</div>
 </div>
@@ -473,6 +473,7 @@ class Engine {
 
     updateMovie(movie){
         const movieInPool = this.moviePool[movie.title] ?? movie;
+        movieInPool.thumbnailRatio = this.extension.thumbnailRatio;
         if (movie.genres && !movieInPool.genres){
             movieInPool.genres = movie.genres;
         }
@@ -717,7 +718,10 @@ if (location.host == 'anime4.site') {
                 const movieListDiv = document.getElementById("favorite-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
+                        ...movie,
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
                         showDetailMovie(movie);
@@ -759,7 +763,11 @@ if (location.host == 'anime4.site') {
                 const movieListDiv = document.getElementById("popular-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
+                        ...movie, 
+                        thumbnailRatio: engine.extension.thumbnailRatio,
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
                         showDetailMovie(movie);
@@ -784,7 +792,11 @@ if (location.host == 'anime4.site') {
                 const movieListDiv = document.getElementById("search-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
+                        ...movie, 
+                        thumbnailRatio: engine.extension.thumbnailRatio,
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
                         showDetailMovie(movie);
@@ -862,7 +874,10 @@ if (location.host == 'anime4.site') {
             playerIframe.src = episode.url;
 
             const playerTitleDiv = document.getElementById("player-title");
-            playerTitleDiv.innerHTML = `${movie.title} - ${episode.title}`
+            playerTitleDiv.innerHTML = `${movie.title} - ${episode.title}`;
+
+            movie.watchingEpisode = episode.title;
+            engine.saveFavoriteMovies();
         }
 
         showFavoriteMovies();
