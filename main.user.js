@@ -574,6 +574,7 @@ class Engine {
 
             const handleResults = (detailMovie, episodes) => {
                 detailMovie.episodeList = episodes;
+                detailMovie.detailLoaded = true;
                 if (!detailMovie.latestEpisode){
                     detailMovie.latestEpisode = episodes[episodes.length - 1]?.title;
                 }
@@ -624,9 +625,12 @@ class Engine {
     }
 
     async getFavoriteMovies(){
-        const favoriteMoviesData = localStorage.getItem('FAVORITE_MOVIES') ?? '[]';
-        this.favoriteMovies = JSON.parse(favoriteMoviesData).map(movie => this.updateMovie(movie));
-
+        if (!this.favoriteMovies.length){
+            const favoriteMoviesData = localStorage.getItem('FAVORITE_MOVIES') ?? '[]';
+            this.favoriteMovies = JSON.parse(favoriteMoviesData)
+                .map(movie => ({...movie, detailLoaded: false}))
+                .map(movie => this.updateMovie(movie));
+        }
         return this.favoriteMovies;
     }
 
@@ -741,7 +745,10 @@ if (location.host == 'anime4.site') {
                 const movieListDiv = document.getElementById("latest-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { ...movie, thumbnailRatio: engine.extension.thumbnailRatio });
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
+                        ...movie, 
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
                         showDetailMovie(movie);
@@ -794,7 +801,6 @@ if (location.host == 'anime4.site') {
                 movies.forEach(movie => {
                     const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
                         ...movie, 
-                        thumbnailRatio: engine.extension.thumbnailRatio,
                         watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
                     });
                     const cardDom = createDom(cardContent);
@@ -836,7 +842,8 @@ if (location.host == 'anime4.site') {
                 removeFavoriteButton.style.display = 'none';
             }
 
-            engine.getMovieDetail(bMovie).then(detailMovie => {
+            const detailMoviePromise = bMovie.detailLoaded ? Promise.resolve(bMovie) : engine.getMovieDetail(bMovie);
+            detailMoviePromise.then(detailMovie => {
                 detailScreenDiv.style.filter = null;
                 console.log(detailMovie);
 
