@@ -40,6 +40,7 @@ const MAIN_TEMPLATE = /* html */ `
                 <button class="icon-button" onclick="showSearchResultMovies()">🔍</button>
             </div>
             <div class="content-container">
+                <div id="search-filters-container" class="search-filters-container"></div>
                 <h2 class="category-header">Kết quả tìm kiếm</h2>
                 <div id="search-movies" class="movie-list"></div>
             </div>
@@ -205,6 +206,37 @@ const STYLES = /* css */ `
         outline: none;
         border: none;
         width: 100%;
+    }
+
+    .search-filters-container {
+        padding: 5px;
+        background: #323243;
+        border-radius: 5px;
+        margin: 5px 0;
+    }
+
+    .filter-content-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        background: #323243;
+    }
+
+    .filter-container select {
+        background: transparent;
+        color: white;
+        border: 1px solid grey;
+    }
+
+    .filter-container option {
+        background: #323243;
+        color: white;
+    }
+
+    .filter-notice {
+        color: lightgreen;
+        font-size: 12px;
+        margin: 5px 0;
     }
 
     #detail-movie-screen {
@@ -421,27 +453,29 @@ class BaseSource {
     latestMovieFromElement(element) { return null }
 
     // SEARCH MOVIES
-    searchMovieUrl(keyword, page) {return null}
-    searchMoviesParse(doc) {return null}
-    searchMovieSelector() {return null}
-    searchMovieFromElement(e) {return null}
+    filterConfig() { return null }
+    searchMovieUrl(keyword, filters, page) { return null }
+    searchMoviesParse(doc) { return null }
+    searchMovieSelector() { return null }
+    searchMovieFromElement(e) { return null }
+
 
     // MOVIE DETAIL
-    movieDetailParse(doc) {return null}
-    relatedMoviesParse(doc) {return null}
+    movieDetailParse(doc) { return null }
+    relatedMoviesParse(doc) { return null }
 
     // EPISODES
-    firstEpisodeUrl(doc) {return null}
-    episodesParse(doc) {return null}
-    episodeSelector() {return null}
-    episodeFromElement(e) {return null}
+    firstEpisodeUrl(doc) { return null }
+    episodesParse(doc) { return null }
+    episodeSelector() { return null }
+    episodeFromElement(e) { return null }
 
     // PLAYER
-    moviePlayerSelector() {return "video"}
-    moviePlayerContainerSelector() { return  this.moviePlayerSelector()}
-    onMoviePageLoadedJavascript()  {return null}
+    moviePlayerSelector() { return "video" }
+    moviePlayerContainerSelector() { return this.moviePlayerSelector() }
+    onMoviePageLoadedJavascript() { return null }
 
-    movieServerSelector() {return null}
+    movieServerSelector() { return null }
 }
 
 class Animet extends BaseSource {
@@ -506,12 +540,129 @@ class Animet extends BaseSource {
     }
 
     // SEARCH MOVIES
-    searchMovieUrl(keyword, page) {
-        keyword = keyword.replaceAll(" ", "-")
-        return `${this.baseUrl}/tim-kiem/${keyword}/trang-${page}.html`;
+    filterConfig() {
+        return {
+            values: {
+                genre: {
+                    label: "Thể loại",
+                    options: [
+                        { value: "", label: "" }, 
+                        { value: "seinen", label: "Seinen" }, 
+                        { value: "ac-quy", label: "Ác Quỷ" }, 
+                        { value: "am-nhac", label: "Âm Nhạc" }, 
+                        { value: "anime", label: "Anime" }, 
+                        { value: "bao-luc", label: "Bạo Lực" }, 
+                        { value: "bi-an", label: "Bí Ẩn" }, 
+                        { value: "bi-an-sieu-nhien", label: "Bíẩn - Siêu nhiên" }, 
+                        { value: "cars", label: "Cars" }, 
+                        { value: "cartoon", label: "Cartoon" }, 
+                        { value: "cgdct", label: "CGDCT" }, 
+                        { value: "chien-tranh", label: "Chiến Tranh" }, 
+                        { value: "cn-animation", label: "CN Animation" }, 
+                        { value: "co-trang", label: "Cổ Trang" }, 
+                        { value: "dementia", label: "Dementia" }, 
+                        { value: "di-gioi", label: "Dị Giới" }, 
+                        { value: "drama", label: "Drama" }, 
+                        { value: "du-hanh-thoi-gian", label: "Du Hành Thời Gian" }, 
+                        { value: "ecchi", label: "Ecchi" }, 
+                        { value: "game", label: "Game" }, 
+                        { value: "gay-can", label: "Gây cấn" }, 
+                        { value: "gia-tuong", label: "Giả Tưởng" }, 
+                        { value: "gia-dinh", label: "Gia Đình" }, 
+                        { value: "hai-huoc", label: "Hài Hước" }, 
+                        { value: "haiten", label: "Haiten" }, 
+                        { value: "hanh-dong", label: "Hành Động" }, 
+                        { value: "harem", label: "Harem" }, 
+                        { value: "hinh-su", label: "Hình Sự" }, 
+                        { value: "hoan-doi-gioi-tinh", label: "Hoán Đổi Giới Tính" }, 
+                        { value: "hoat-hinh", label: "Hoạt Hình" }, 
+                        { value: "hoc-duong", label: "Học Đường" }, 
+                        { value: "hoi-hop", label: "Hồi hộp" }, 
+                        { value: "huyen-ao", label: "Huyền Ảo" },
+                        { value: "huyen-huyen", label: "Huyền Huyễn" }, 
+                        { value: "isekai", label: "Isekai" }, 
+                        { value: "josei", label: "Josei" }, 
+                        { value: "khoa-hoc", label: "Khoa Học" }, 
+                        { value: "kids", label: "Kids" }, 
+                        { value: "kiem-hiep", label: "KiếmHiệp" }, 
+                        { value: "kinh-di", label: "Kinh Dị" }, 
+                        { value: "lang-man", label: "Lãng mạn" }, 
+                        { value: "lich-su", label: "Lịch Sử" }, 
+                        { value: "live-action", label: "Live Action" }, 
+                        { value: "ma-ca-rong", label: "Ma Cà Rồng" }, 
+                        { value: "mecha", label: "Mecha" }, 
+                        { value: "movie-ova", label: "Movie & OVA" }, 
+                        { value: "mystery", label: "Mystery" }, 
+                        { value: "ninja", label: "Ninja" }, 
+                        { value: "ona", label: "ONA" }, 
+                        { value: "parody", label: "Parody" }, 
+                        { value: "phep-thuat", label: "Phép Thuật" },
+                        { value: "phieu-luu", label: "PhiêuLưu" },
+                        { value: "police", label: "Police" },
+                        { value: "quan-doi", label: "Quân Đội" },
+                        { value: "samurai", label: "Samurai" },
+                        { value: "shoujo", label: "Shoujo" },
+                        { value: "shoujo-ai", label: "Shoujo Ai" },
+                        { value: "shounen", label: "Shounen" },
+                        { value: "shounen-ai", label: "Shounen Ai" },
+                        { value: "sieu-nang-luc", label: "Siêu Năng Lực" },
+                        { value: "sieu-nhien", label: "Siêu Nhiên" },
+                        { value: "special", label: "Special" },
+                        { value: "tai-lieu", label: "Tài liệu" },
+                        { value: "tam-ly", label: "Tâm Lý" },
+                        { value: "than-thoai", label: "Thần Thoại" },
+                        { value: "the-gioi-song-song", label: "Thế Giới Song Song" },
+                        { value: "the-thao", label: "ThểThao" },
+                        { value: "thriller", label: "Thriller" },
+                        { value: "tien-hiep", label: "Tiên Hiệp" },
+                        { value: "tieu-thuyet", label: "TiểuThuyết" },
+                        { value: "tinh-cam", label: "Tình Cảm" },
+                        { value: "tinh-tay-ba", label: "Tình Tay Ba" },
+                        { value: "tinh-yeu", label: "TìnhYêu" },
+                        { value: "tokusatsu", label: "Tokusatsu" },
+                        { value: "tragedy", label: "Tragedy" },
+                        { value: "trailer", label: "Trailer" },
+                        { value: "trinh-tham", label: "Trinh Thám" },
+                        { value: "truyen-hinh", label: "Truyền Hình" },
+                        { value: "tv-show", label: "TV Show" },
+                        { value: "vien-tay", label: "Viễn Tây" },
+                        { value: "vien-tuong", label: "Viễn Tưởng" },
+                        { value: "vo-thuat", label: "Võ Thuật" },
+                        { value: "vu-tru", label: "Vũ Trụ" },
+                        { value: "yaoi", label: "Yaoi" },
+                        { value: "yuri", label: "Yuri" },
+                        { value: "doi-thuong", label: "Đời Thường" }
+                    ]
+                },
+                year: {
+                    label: "Năm",
+                    options: [
+                        { value: "", label: "" }
+                    ].concat([...Array(20).keys()].map(it => {
+                        const year = new Date().getFullYear() - it;
+                        return { value: year, label: year }
+                    })) 
+                }
+            },
+            notice: "Không thể dùng bộ lọc khi nhập từ khóa tìm kiếm",
+        }
     }
-    searchMovieSelector() {return this.latestMovieSelector()}
-    searchMovieFromElement(e) {return this.latestMovieFromElement(e)}
+    searchMovieUrl(keyword, filters, page) {
+        if (keyword){
+            keyword = keyword.replaceAll(" ", "-")
+            return `${this.baseUrl}/tim-kiem/${keyword}/trang-${page}.html`;
+        } else {
+            const genre = filters?.genre ?? "";
+            const year = filters?.year ?? "";
+            if (genre) {
+                return `${this.baseUrl}/the-loai/${genre}/trang-${page}.html`;
+            } else if (year) {
+                return `${this.baseUrl}/danh-sach/phim-nam-${year}/trang-${page}.html`;
+            }
+        }
+    }
+    searchMovieSelector() { return this.latestMovieSelector() }
+    searchMovieFromElement(e) { return this.latestMovieFromElement(e) }
 
     // MOVIE DETAIL
     movieDetailParse(doc) {
@@ -525,11 +676,11 @@ class Animet extends BaseSource {
         return doc.querySelector(".Image a").getAttribute("href")
     }
 
-    episodeSelector(){ return ".list-episode a"}
+    episodeSelector() { return ".list-episode a" }
 
     episodeFromElement(e) {
         return {
-            title: e?.textContent?.trim(), 
+            title: e?.textContent?.trim(),
             url: e.getAttribute("href")
         }
     }
@@ -537,7 +688,7 @@ class Animet extends BaseSource {
 
 class Phimmoi extends BaseSource {
 
-    name= "Phimmoi"
+    name = "Phimmoi"
     thumbnailRatio = 1.7
     baseUrl = "https://phimmoichill.best";
 
@@ -555,7 +706,7 @@ class Phimmoi extends BaseSource {
         const title = e.querySelector("h3").textContent?.trim()
         const imgUrl = e.querySelector("img").getAttribute("src")
         const episodeText = e.querySelector(".label").textContent?.trim()
-        
+
         const match = episodeText?.match(/\d+/);
         const episodeNum = match ? parseInt(match[0], 10) : null;
 
@@ -584,7 +735,7 @@ class Phimmoi extends BaseSource {
     }
 
     // SEARCH MOVIES
-    searchMovieUrl(keyword, page) {
+    searchMovieUrl(keyword, filters, page) {
         return `${this.baseUrl}/tim-kiem/${keyword.replace(" ", "+")}/`
     }
 
@@ -616,12 +767,12 @@ class Phimmoi extends BaseSource {
                     const match = episodeText?.match(/\d+/);
                     const episodeNum = match ? parseInt(match[0], 10) : null;
                     return {
-                        title: episodeNum, 
-                        url: it.getAttribute("href") 
+                        title: episodeNum,
+                        url: it.getAttribute("href")
                     }
                 });
             } else {
-                return [{title: "Xem ngay", url: doc.baseUri()}]
+                return [{ title: "Xem ngay", url: doc.baseUri() }]
             }
         }
         return []
@@ -633,7 +784,7 @@ class Phimmoi extends BaseSource {
     }
 
     episodeFromElement(e) {
-        return {title: "", url: ""}
+        return { title: "", url: "" }
     }
 }
 
@@ -652,7 +803,7 @@ class WebView {
         console.log("Loading:", url);
         this.iframe.src = url;
         return await new Promise((resolve, reject) => {
-            setTimeout(() => {                
+            setTimeout(() => {
                 resolve(this.iframe.contentDocument || this.iframe.contentWindow.document);
             }, 3000);
         });
@@ -671,6 +822,7 @@ class Engine {
     currentPopularMoviesPage = 0;
     currentSearchMoviesPage = 0;
     currentSearchKeyword = null;
+    currentSearchFilters = null;
 
     selectingMovie = null;
 
@@ -685,16 +837,16 @@ class Engine {
         this.source = source;
     }
 
-    updateMovie(movie){
+    updateMovie(movie) {
         const movieInPool = this.moviePool[movie.title] ?? movie;
         movieInPool.thumbnailRatio = this.source.thumbnailRatio;
-        if (movie.genres && !movieInPool.genres){
+        if (movie.genres && !movieInPool.genres) {
             movieInPool.genres = movie.genres;
         }
         if (movie.episodeList && !movieInPool.episodeList) {
             movieInPool.episodeList = movie.episodeList;
         }
-        if (movie.description && !movieInPool.description){
+        if (movie.description && !movieInPool.description) {
             movieInPool.description = movie.description;
         }
 
@@ -702,9 +854,9 @@ class Engine {
         return movieInPool;
     }
 
-    updateMovieList(currentList, newData){
+    updateMovieList(currentList, newData) {
         newData.forEach(movie => {
-            if (!currentList.some(m => m.title == movie.title)){
+            if (!currentList.some(m => m.title == movie.title)) {
                 movie = this.updateMovie(movie);
                 currentList.push(movie);
             }
@@ -761,16 +913,17 @@ class Engine {
         return promise
     }
 
-    async getSearchMovies(keyword) {
+    async getSearchMovies(keyword, filters) {
         const promise = new Promise((resolve, reject) => {
-            if (keyword != this.currentSearchKeyword){
+            if (keyword != this.currentSearchKeyword || !this.isEqual(filters, this.currentSearchFilters)) {
                 this.currentSearchKeyword = keyword;
+                this.currentSearchFilters = filters;
                 this.currentSearchMoviesPage = 0;
                 this.searchMovies = [];
             }
-            this.currentPopularMoviesPage++;
+            this.currentSearchMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, this.currentSearchMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, filters, this.currentSearchMoviesPage));
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.searchMoviesParse(doc)
                 if (movieList == null) {
@@ -790,7 +943,7 @@ class Engine {
         return promise
     }
 
-    async getMovieDetail(movie){
+    async getMovieDetail(movie) {
         const promise = new Promise((resolve, reject) => {
             const webView = new WebView();
             const webLoadingPromise = webView.loadUrl(movie.movieUrl);
@@ -798,7 +951,7 @@ class Engine {
             const handleResults = (detailMovie, episodes) => {
                 detailMovie.episodeList = episodes;
                 detailMovie.detailLoaded = true;
-                if (!detailMovie.latestEpisode){
+                if (!detailMovie.latestEpisode) {
                     detailMovie.latestEpisode = episodes[episodes.length - 1]?.title;
                 }
                 this.saveFavoriteMovies();
@@ -808,7 +961,7 @@ class Engine {
             };
 
             webLoadingPromise.then(doc => {
-                const detailMovie = this.updateMovie({...movie, ...this.source.movieDetailParse(doc)});
+                const detailMovie = this.updateMovie({ ...movie, ...this.source.movieDetailParse(doc) });
                 const firstEpisodeUrl = this.source.firstEpisodeUrl(doc)
                 if (!firstEpisodeUrl) {
                     const episodes = this.getMovieEpisodes(doc, null, true);
@@ -816,15 +969,15 @@ class Engine {
                     handleResults(detailMovie, episodes);
                 } else {
                     const webLoadingPromise1 = webView.loadUrl(firstEpisodeUrl);
-                    webLoadingPromise1.then(doc1 => {                        
+                    webLoadingPromise1.then(doc1 => {
                         var episodes = this.getMovieEpisodes(doc1, firstEpisodeUrl, true)
                         handleResults(detailMovie, episodes);
                     });
                 }
-                
+
             });
         });
-        
+
         return promise
     }
 
@@ -832,7 +985,7 @@ class Engine {
         doc,
         firstEpisodeUrl,
         contentPageFinished
-    ){
+    ) {
         var episodes = this.source.episodesParse(doc)
         if (!episodes?.length) {
             episodes = [...doc.querySelectorAll(this.source.episodeSelector())].filter(it => it).map(it => {
@@ -842,29 +995,29 @@ class Engine {
         }
         // when can not get episode list, but has firstEpisodeUrl -> set it to episode
         if (contentPageFinished && !episodes?.length && firstEpisodeUrl != null) {
-            episodes = [{title: "Xem ngay", url: firstEpisodeUrl}]
+            episodes = [{ title: "Xem ngay", url: firstEpisodeUrl }]
         }
         return episodes
     }
 
-    async getFavoriteMovies(){
-        if (!this.favoriteMovies.length){
+    async getFavoriteMovies() {
+        if (!this.favoriteMovies.length) {
             const favoriteMoviesData = localStorage.getItem('FAVORITE_MOVIES') ?? '[]';
             this.favoriteMovies = JSON.parse(favoriteMoviesData)
-                .map(movie => ({...movie, detailLoaded: false}))
+                .map(movie => ({ ...movie, detailLoaded: false }))
                 .map(movie => this.updateMovie(movie));
         }
         return this.favoriteMovies;
     }
 
-    async saveFavoriteMovies(){
+    async saveFavoriteMovies() {
         localStorage.setItem('FAVORITE_MOVIES', JSON.stringify(this.favoriteMovies));
         return this.favoriteMovies;
     }
 
     addFavotiteMovie(movie) {
         movie = this.updateMovie(movie);
-        if (this.favoriteMovies.every(m => m.title != movie)){
+        if (this.favoriteMovies.every(m => m.title != movie)) {
             this.favoriteMovies.push(movie);
             this.saveFavoriteMovies();
         }
@@ -876,6 +1029,12 @@ class Engine {
         this.favoriteMovies = this.favoriteMovies.filter(m => m.title != movie.title)
         this.saveFavoriteMovies();
         return movie;
+    }
+
+    isEqual(obj1, obj2) {
+        if (obj1 == null && obj2 == null) return true;
+        if (obj1 == null || obj2 == null) return false;
+        return Object.keys(obj1).every(key => obj1[key] === obj2[key]);
     }
 }
 
@@ -897,7 +1056,7 @@ function toastMsg(msg) {
     var x = document.getElementById("snackbar");
     x.className = "show";
     x.innerHTML = msg;
-    setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
 }
 
 const SUPPORTED_SOURCES = {
@@ -944,9 +1103,38 @@ if (SUPPORTED_SOURCES[location.host]) {
             mainScreenDiv.style.display = 'none';
             searchScreenDiv.style.display = 'block';
             document.getElementById("search-keyword-input").focus();
+
+            const searchFilterDiv = document.getElementById("search-filters-container");
+            if (searchFilterDiv.innerHTML == '') {
+                const filterConfig = engine.source.filterConfig();
+                if (filterConfig) {
+                    const filterContentContainerDiv = createDom(`<div class="filter-content-container"</div>`);
+                    searchFilterDiv.appendChild(filterContentContainerDiv);
+                    Object.keys(filterConfig.values).forEach(key => {
+                        const filter = filterConfig.values[key];
+                        const filterDiv = createDom(`<div class="filter-container"><label>${filter.label}</label></div>`);
+                        const select = document.createElement('select');
+                        select.id = "filter-" + key;
+                        filter.options.forEach(option => {
+                            const optionElement = document.createElement('option');
+                            optionElement.value = option.value;
+                            optionElement.innerHTML = option.label;
+                            select.appendChild(optionElement);
+                        });
+                        filterDiv.appendChild(select);
+                        filterContentContainerDiv.appendChild(filterDiv);
+                    });
+                    if (filterConfig.notice) {
+                        const noticeDiv = createDom(`<div class="filter-notice">${filterConfig.notice}</div>`);
+                        searchFilterDiv.appendChild(noticeDiv);
+                    }
+                } else {
+                    searchFilterDiv.style.display = 'none';
+                }
+            }
         }
 
-        function closeSearch(){
+        function closeSearch() {
             searchScreenDiv.style.display = 'none';
             mainScreenDiv.style.display = 'block';
         }
@@ -957,9 +1145,9 @@ if (SUPPORTED_SOURCES[location.host]) {
                 const movieListDiv = document.getElementById("favorite-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
                         ...movie,
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
                     });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
@@ -981,9 +1169,9 @@ if (SUPPORTED_SOURCES[location.host]) {
                 const movieListDiv = document.getElementById("latest-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
-                        ...movie, 
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
+                        ...movie,
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
                     });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
@@ -1007,9 +1195,9 @@ if (SUPPORTED_SOURCES[location.host]) {
                 const movieListDiv = document.getElementById("popular-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
-                        ...movie, 
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
+                        ...movie,
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
                     });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
@@ -1026,8 +1214,18 @@ if (SUPPORTED_SOURCES[location.host]) {
 
         function showSearchResultMovies() {
             const keyword = document.getElementById('search-keyword-input').value;
-            toastMsg("Tìm kiếm: " + keyword);
-            engine.getSearchMovies(keyword).then(movies => {
+            const filterConfig = engine.source.filterConfig();
+            const filters = Object.keys(filterConfig?.values ?? {}).reduce((acc, key) => {
+                const select = document.getElementById("filter-" + key);
+                acc[key] = select?.value;
+                return acc;
+            }, {});
+            if (keyword) {
+                toastMsg("Tìm kiếm: " + keyword);
+            } else if (Object.keys(filters).length) {
+                toastMsg("Tìm kiếm theo bộ lọc: " + JSON.stringify(filters));
+            }
+            engine.getSearchMovies(keyword, filters).then(movies => {
                 // console.log("Results:");
 
                 // console.log(movies);
@@ -1036,9 +1234,9 @@ if (SUPPORTED_SOURCES[location.host]) {
                 const movieListDiv = document.getElementById("search-movies");
                 movieListDiv.innerHTML = '';
                 movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, { 
-                        ...movie, 
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/`: ''
+                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
+                        ...movie,
+                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
                     });
                     const cardDom = createDom(cardContent);
                     cardDom.addEventListener('click', (e) => {
@@ -1063,7 +1261,7 @@ if (SUPPORTED_SOURCES[location.host]) {
             movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${bMovie.backgroundImageUrl}')`;
             movieDetailDiv.querySelector("#detail-movie-image").src = bMovie.cardImageUrl;
             movieDetailDiv.querySelector("#detail-movie-title").innerHTML = bMovie.title;
-            
+
             const episodeListDiv = document.querySelector(".episode-list");
             episodeListDiv.innerHTML = '';
 
@@ -1081,8 +1279,8 @@ if (SUPPORTED_SOURCES[location.host]) {
                 removeFavoriteButton.style.display = 'none';
             }
 
-            if (!forceReload){
-                if (bMovie.episodeList?.length == bMovie.latestEpisode){
+            if (!forceReload) {
+                if (bMovie.episodeList?.length == bMovie.latestEpisode) {
                     bMovie.detailLoaded = true;
                 }
             }
@@ -1097,8 +1295,8 @@ if (SUPPORTED_SOURCES[location.host]) {
                 movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
                 movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
                 movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
-                
-                if (engine.favoriteMovies.some(m => m.title == detailMovie.title)){
+
+                if (engine.favoriteMovies.some(m => m.title == detailMovie.title)) {
                     addFavoriteButton.style.display = 'none';
                     removeFavoriteButton.style.display = 'block';
                 } else {
@@ -1111,10 +1309,10 @@ if (SUPPORTED_SOURCES[location.host]) {
                         title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
                     });
                     const episodeItem = createDom(eleContent);
-                    if (Number(episode.title) < Number(detailMovie.watchingEpisode)){
+                    if (Number(episode.title) < Number(detailMovie.watchingEpisode)) {
                         episodeItem.classList.add("movie-episode-watched")
                     }
-                    if (episode.title == detailMovie.watchingEpisode){
+                    if (episode.title == detailMovie.watchingEpisode) {
                         episodeItem.classList.add("movie-episode-watching")
                     }
                     episodeItem.addEventListener('click', () => {
@@ -1126,15 +1324,15 @@ if (SUPPORTED_SOURCES[location.host]) {
             });
         }
 
-        function refreshMovieDetail(){
+        function refreshMovieDetail() {
             toastMsg("Tải lại thông tin phim")
-            if (engine.selectingMovie){
+            if (engine.selectingMovie) {
                 engine.selectingMovie.detailLoaded = false;
                 showDetailMovie(engine.selectingMovie, true);
             }
         }
 
-        function showMoviePlayer(movie, episode){
+        function showMoviePlayer(movie, episode) {
             movie.watchingEpisode = episode.title;
             engine.saveFavoriteMovies();
             // Update displaying watching episode
@@ -1168,7 +1366,7 @@ if (SUPPORTED_SOURCES[location.host]) {
     // Remove video ads
     setInterval(() => {
         Array.from(document.getElementsByTagName("video")).forEach((element) => {
-            if (element.duration < 120 && element.currentTime < element.duration){
+            if (element.duration < 120 && element.currentTime < element.duration) {
                 console.log("Skipped an ads!!!!");
                 element.muted = true;
                 element.volume = 0;
