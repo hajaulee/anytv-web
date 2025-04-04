@@ -1197,6 +1197,10 @@ class Engine {
     }
 }
 
+/* ============================
+ * CÁC HÀM TIỆN ÍCH
+ * ============================ */
+
 function fillTemplate(template, obj) {
     let content = template;
     Object.keys(obj).forEach(key => {
@@ -1223,6 +1227,19 @@ function setIntervalImmediate(func, interval) {
     return setInterval(func, interval);
 }
 
+function addMainStyle() {
+    // Add the styles to the document
+    const styleTag = document.createElement('style');
+    styleTag.textContent = STYLES;
+    document.head.appendChild(styleTag);
+}
+function addMainScript() {
+    // Add the template to the body
+    const templateDiv = document.createElement('div');
+    templateDiv.innerHTML = MAIN_TEMPLATE;
+    document.body.appendChild(templateDiv.firstElementChild);
+}
+
 const SUPPORTED_SOURCES = {
     'anime4.site': new Animet(),
     'phimmoichill.best': new Phimmoi()
@@ -1232,15 +1249,8 @@ if (SUPPORTED_SOURCES[location.host]) {
     // MAIN FRAME
     if (window.self == window.top) {
 
-        // Add the styles to the document
-        const styleTag = document.createElement('style');
-        styleTag.textContent = STYLES;
-        document.head.appendChild(styleTag);
-
-        // Add the template to the body
-        const templateDiv = document.createElement('div');
-        templateDiv.innerHTML = MAIN_TEMPLATE;
-        document.body.appendChild(templateDiv.firstElementChild);
+        addMainStyle();
+        addMainScript();
 
         var source = SUPPORTED_SOURCES[location.host];
         var engine = new Engine(source);
@@ -1252,6 +1262,10 @@ if (SUPPORTED_SOURCES[location.host]) {
         const loadingScreenDiv = document.getElementById("loading-screen");
 
 
+        /* ============================
+        * CÁC HÀM XỬ LÝ SỰ KIỆN
+        * ============================ */
+        
         function closePlayer() {
             playerScreenDiv.style.display = 'none';
             document.getElementById("player-iframe").src = '';
@@ -1566,14 +1580,20 @@ if (SUPPORTED_SOURCES[location.host]) {
     }, 1000);
 }
 
-if (location.host == "hajaulee.github.io"){
+if (["hajaulee.github.io"].includes(location.host)){
     setTimeout(() => {
+        addMainStyle();
+        // Add only snackbar to the page
+        document.body.appendChild(createDom("<div id='snackbar'></div>"));
+
         if (window.ANYTVWEB_LATEST_VERSION) {
             const parsedVersion = VERSION.split('.').map(Number);
             const latestVersion = window.ANYTVWEB_LATEST_VERSION.split('.').map(Number);
             const isNewerVersion = latestVersion.some((num, index) => num > (parsedVersion[index] || 0));
             if (isNewerVersion) {
                 toastMsg("Có phiên bản mới: " + window.ANYTVWEB_LATEST_VERSION);
+            } else {
+                console.log("Phiên bản mới nhất: " + VERSION);
             }
         }
     }, 2000);
