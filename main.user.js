@@ -1144,6 +1144,11 @@ function toastMsg(msg) {
     setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
 }
 
+function setIntervalImmediate(func, interval) {
+    func();
+    return setInterval(func, interval);
+}
+
 const SUPPORTED_SOURCES = {
     'anime4.site': new Animet(),
     'phimmoichill.best': new Phimmoi()
@@ -1441,7 +1446,7 @@ if (SUPPORTED_SOURCES[location.host]) {
     } else {
         // IFRAME SCRIPT
 
-        setInterval(() => {
+        setIntervalImmediate(() => {
             // Hide all images
             const images = document.querySelectorAll("img");
             images.forEach(image => {
@@ -1456,14 +1461,14 @@ if (SUPPORTED_SOURCES[location.host]) {
     window.open = console.log;
 
     // Remove ads
-    setInterval(() => {
+    setIntervalImmediate(() => {
         while (document.body.nextSibling) {
             document.body.nextSibling.remove();
         }
     }, 1000);
 
     // Remove video ads
-    setInterval(() => {
+    setIntervalImmediate(() => {
         Array.from(document.getElementsByTagName("video")).forEach((element) => {
             if (element.duration < 120 && element.currentTime < element.duration) {
                 console.log("Skipped an ads!!!!");
