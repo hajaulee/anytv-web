@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0
+// @version      1.0.2
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
+const VERSION = "1.0.2";
 /* ============================
  * CẤU HÌNH VÀ TEMPLATE HTML
  * ============================ */
@@ -21,6 +22,7 @@ const MAIN_TEMPLATE = /* html */ `
                 <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
                 <span style="flex: 1 1 auto"></span>
                 <button class="icon-button" onclick="openSearch()">🔍</button>
+                <button class="icon-button" onclick="openMenu()">⋮</button>
             </div>
             <div class="content-container">
                 <h2 class="category-header">Yêu thích</h2>
@@ -226,6 +228,11 @@ const STYLES = /* css */ `
         background: transparent;
         color: white;
         border: 1px solid grey;
+        border-radius: 3px;
+        line-height: normal;
+        height: 2.5em;
+        display: block;
+        padding: .5rem 1rem;
     }
 
     .filter-container option {
@@ -735,8 +742,86 @@ class Phimmoi extends BaseSource {
     }
 
     // SEARCH MOVIES
+    filterConfig() {
+        return {
+            values: {
+                list: {
+                    label: 'Danh sách phim',
+                    options: [
+                        { label: '', value: '' },
+                        { label: 'Phim Bộ', value: 'phim-bo' },
+                        { label: 'Phim Lẻ', value: 'phim-le' },
+                        { label: 'Phim Chiếu Rạp', value: 'phim-chieu-rap' },
+                        { label: 'Top IMDB', value: 'top-imdb' },
+                        { label: 'Phim Hot', value: 'phim-hot' },
+                        { label: 'Phim Netflix', value: 'phim-netflix' },
+                        { label: 'Phim DC Comic', value: 'phim-dc' },
+                        { label: 'Phim Marvel', value: 'phim-marvel' },
+                        { label: 'Phim HD', value: 'phim-hd' }
+                    ]
+                },
+                genre: {
+                    label: 'Thể loại',
+                    options: [
+                        { label: '', value: '' },
+                        { label: 'Phim Hành Động', value: 'phim-hanh-dong' },
+                        { label: 'Phim Võ Thuật', value: 'phim-vo-thuat' },
+                        { label: 'Phim Tình Cảm', value: 'phim-tinh-cam' },
+                        { label: 'Phim Hoạt Hình', value: 'phim-hoat-hinh' },
+                        { label: 'Phim Hài Hước', value: 'phim-hai-huoc' },
+                        { label: 'Phim Viễn Tưởng', value: 'phim-vien-tuong' },
+                        { label: 'Phim Cổ Trang', value: 'phim-co-trang' },
+                        { label: 'Phim Phiêu Lưu', value: 'phim-phieu-luu' },
+                        { label: 'Phim Tâm Lý', value: 'phim-tam-ly' },
+                        { label: 'Phim Khoa Học', value: 'phim-khoa-hoc' },
+                        { label: 'Phim Hình Sự', value: 'phim-hinh-su' },
+                        { label: 'Phim Ma - Kinh Dị', value: 'phim-ma-kinh-di' },
+                        { label: 'Phim Chiến Tranh', value: 'phim-chien-tranh' },
+                        { label: 'Phim Âm Nhạc', value: 'phim-am-nhac' },
+                        { label: 'Phim Thể Thao', value: 'phim-the-thao' },
+                        { label: 'Phim Thần Thoại', value: 'phim-than-thoai' },
+                        { label: 'Game show', value: 'game-show' },
+                        { label: 'Phim Truyền Hình', value: 'phim-truyen-hinh' },
+                        { label: 'Phim Chiếu Rạp', value: 'phim-chieu-rap' },
+                        { label: 'Phim Anime', value: 'phim-anime' },
+                        { label: 'Phim Sắp Chiếu', value: 'phim-sap-chieu' },
+                        { label: 'Phim Thuyết Minh', value: 'phim-thuyet-minh' },
+                    ]
+                },
+                country: {
+                    label: 'Quốc gia',
+                    options: [
+                        { label: '', value: '' },
+                        { label: 'Phim Trung Quốc', value: 'phim-trung-quoc' },
+                        { label: 'Phim Hàn Quốc', value: 'phim-han-quoc' },
+                        { label: 'Phim Nhật Bản', value: 'phim-nhat-ban' },
+                        { label: 'Phim Âu Mỹ', value: 'phim-au-my' },
+                        { label: 'Phim Thái Lan', value: 'phim-thai-lan' },
+                        { label: 'Phim Đài Loan', value: 'phim-dai-loan' },
+                        { label: 'Phim Tổng Hợp', value: 'phim-tong-hop' },
+                        { label: 'Phim Hồng Kông', value: 'phim-hong-kong' },
+                        { label: 'Phim Ấn Độ', value: 'phim-an-do' },
+                    ]
+                }
+            },
+            notice: "Không thể dùng bộ lọc khi nhập từ khóa tìm kiếm",
+        }
+    }
     searchMovieUrl(keyword, filters, page) {
-        return `${this.baseUrl}/tim-kiem/${keyword.replace(" ", "+")}/`
+        if (keyword) {
+            return `${this.baseUrl}/tim-kiem/${keyword.replace(" ", "+")}/page-${page}/`
+        } else {
+            const genre = filters?.genre ?? "";
+            const country = filters?.country ?? "";
+            const list = filters?.list ?? "";
+            if (genre) {
+                return `${this.baseUrl}/genre/${genre}/page-${page}/`
+            } else if (country) {
+                return `${this.baseUrl}/country/${country}/page-${page}/`
+            } else if (list) {
+                return `${this.baseUrl}/list/${list}/page-${page}/`
+            }
+        }
     }
 
     searchMovieSelector() {
@@ -772,7 +857,7 @@ class Phimmoi extends BaseSource {
                     }
                 });
             } else {
-                return [{ title: "Xem ngay", url: doc.baseUri() }]
+                return [{ title: "Xem ngay", url: doc.location.href }]
             }
         }
         return []
@@ -1134,6 +1219,10 @@ if (SUPPORTED_SOURCES[location.host]) {
             }
         }
 
+        function openMenu() {
+            toastMsg("Phiên bản: " + VERSION);
+        }
+
         function closeSearch() {
             searchScreenDiv.style.display = 'none';
             mainScreenDiv.style.display = 'block';
@@ -1349,6 +1438,16 @@ if (SUPPORTED_SOURCES[location.host]) {
         showFavoriteMovies();
         showLastestMovies();
         showPopularMovies();
+    } else {
+        // IFRAME SCRIPT
+
+        setInterval(() => {
+            // Hide all images
+            const images = document.querySelectorAll("img");
+            images.forEach(image => {
+                image.style.display = "none";
+            });
+        }, 1000);
     }
 
     /* Run in all frame script */
