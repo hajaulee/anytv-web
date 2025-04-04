@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.2
+// @version      1.0.3
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.2";
+const VERSION = "1.0.3";
 /* ============================
  * CẤU HÌNH VÀ TEMPLATE HTML
  * ============================ */
