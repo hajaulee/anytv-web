@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.5
+// @version      1.0.6
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.5";
+const VERSION = "1.0.6";
 
 // ============================
 // #region TEMPLATE HTML
@@ -550,6 +550,21 @@ function setIntervalImmediate(func, interval) {
     func();
     return setInterval(func, interval);
 }
+
+function tryUtil(func, interval, timeout){
+    let result = func();
+    let totalTime = 0;
+    if (!result){
+        const timer = setInterval(() => {
+            let result1 = func();
+            totalTime += interval;
+            if (result1 || totalTime > timeout){
+                clearInterval(timer);
+            }
+        }, interval);
+    }
+}
+
 
 function addMainStyle() {
     // Add the styles to the document
