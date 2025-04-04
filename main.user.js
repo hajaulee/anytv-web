@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.7
+// @version      1.0.8
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.7";
+const VERSION = "1.0.8";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1542,12 +1542,12 @@ class DetailScreen extends BaseScreen {
 
 
         this.addFavoriteButton.onclick = () => {
-            this.engine.addFavotiteMovie(bMovie);
+            this.engine.addFavotiteMovie(this.movie);
             this.addFavoriteButton.style.display = 'none';
             this.removeFavoriteButton.style.display = 'block';
         }
         this.removeFavoriteButton.onclick = () => {
-            this.engine.removeFavotiteMovie(bMovie);
+            this.engine.removeFavotiteMovie(this.movie);
             this.addFavoriteButton.style.display = 'block';
             this.removeFavoriteButton.style.display = 'none';
         }
