@@ -83,6 +83,11 @@ const MAIN_TEMPLATE = /* html */ `
             </div>
         </div>
 
+        <!-- Màn hình loading -->
+        <div id="loading-screen" class="cover" style="display: none">
+            <span class="loader"></span>
+        </div>
+        
         <!-- Snackbar thông báo -->
         <div id="snackbar">Some text some message..</div>
     </div>
@@ -342,6 +347,9 @@ const STYLES = /* css */ `
         height: 100dvh;
         overflow: hidden;
         background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .float-movie-player {
@@ -397,7 +405,6 @@ const STYLES = /* css */ `
     #snackbar {
         visibility: hidden;
         min-width: 250px;
-        margin-left: -125px;
         background-color: #333;
         color: #fff;
         text-align: center;
@@ -408,6 +415,7 @@ const STYLES = /* css */ `
         left: 50%;
         bottom: 30px;
         font-size: 17px;
+        transform: translateX(-50%);
       }
       
       #snackbar.show {
@@ -434,6 +442,71 @@ const STYLES = /* css */ `
       @keyframes fadeout {
         from {bottom: 30px; opacity: 1;}
         to {bottom: 0; opacity: 0;}
+      }
+
+      /* CSS for loading spinner */
+      .loader {
+        width: 120px;
+        height: 150px;
+        background-color: #fff;
+        background-repeat: no-repeat;
+        background-image: linear-gradient(#ddd 50%, #bbb 51%),
+          linear-gradient(#ddd, #ddd), linear-gradient(#ddd, #ddd),
+          radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%),
+          radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%),
+          radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%);
+        background-position: 0 20px, 45px 0, 8px 6px, 55px 3px, 75px 3px, 95px 3px;
+        background-size: 100% 4px, 1px 23px, 30px 8px, 15px 15px, 15px 15px, 15px 15px;
+        position: relative;
+        border-radius: 6%;
+        animation: shake 3s ease-in-out infinite;
+        transform-origin: 60px 180px;
+      }
+      .loader:before {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 100%;
+        width: 7px;
+        height: 5px;
+        background: #aaa;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 102px 0 #aaa;
+      }
+      
+      .loader:after {
+        content: "";
+        position: absolute;
+        width: 95px;
+        height: 95px;
+        left: 0;
+        right: 0;
+        margin: auto;
+        bottom: 20px;
+        background-color: #bbdefb;
+        background-image: 
+          linear-gradient( to right, #0004 0%, #0004 49%, #0000 50%, #0000 100% ),
+          linear-gradient(135deg, #64b5f6 50%, #607d8b 51%);
+        background-size: 30px 100%, 90px 80px;
+        border-radius: 50%;
+        background-repeat: repeat, no-repeat;
+        background-position: 0 0;
+        box-sizing: border-box;
+        border: 10px solid #DDD;
+        box-shadow: 0 0 0 4px #999 inset, 0 0 6px 6px #0004 inset;
+        animation: spin 3s ease-in-out infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg) }
+        50% { transform: rotate(360deg) }
+        75% { transform: rotate(750deg) }
+        100% { transform: rotate(1800deg) }
+      }
+      @keyframes shake {
+        65%, 80%, 88%, 96% { transform: rotate(0.5deg) }
+        50%, 75%, 84%, 92% { transform: rotate(-0.5deg) }
+        0%, 50%, 100%  { transform: rotate(0) }
       }
 `;
 
@@ -1175,6 +1248,7 @@ if (SUPPORTED_SOURCES[location.host]) {
         const detailScreenDiv = document.getElementById("detail-movie-screen");
         const playerScreenDiv = document.getElementById("player-screen");
         const searchScreenDiv = document.getElementById("search-screen");
+        const loadingScreenDiv = document.getElementById("loading-screen");
 
 
         function closePlayer() {
@@ -1231,6 +1305,14 @@ if (SUPPORTED_SOURCES[location.host]) {
         function closeSearch() {
             searchScreenDiv.style.display = 'none';
             mainScreenDiv.style.display = 'block';
+        }
+
+        function showLoadingScreen() {
+            loadingScreenDiv.style.display = 'flex';
+        }
+
+        function hideLoadingScreen() {
+            loadingScreenDiv.style.display = 'none';
         }
 
         function showFavoriteMovies() {
@@ -1319,11 +1401,10 @@ if (SUPPORTED_SOURCES[location.host]) {
             } else if (Object.keys(filters).length) {
                 toastMsg("Tìm kiếm theo bộ lọc: " + JSON.stringify(filters));
             }
-            engine.getSearchMovies(keyword, filters).then(movies => {
-                // console.log("Results:");
 
-                // console.log(movies);
-                // console.log(engine);
+            showLoadingScreen();
+            engine.getSearchMovies(keyword, filters).then(movies => {
+                hideLoadingScreen();
 
                 const movieListDiv = document.getElementById("search-movies");
                 movieListDiv.innerHTML = '';
@@ -1346,6 +1427,7 @@ if (SUPPORTED_SOURCES[location.host]) {
         function showDetailMovie(bMovie, forceReload) {
             engine.selectingMovie = bMovie;
 
+            showLoadingScreen();
             mainScreenDiv.style.display = 'none';
             searchScreenDiv.style.display = 'none';
             detailScreenDiv.style.display = 'block';
@@ -1376,12 +1458,15 @@ if (SUPPORTED_SOURCES[location.host]) {
             if (!forceReload) {
                 if (bMovie.episodeList?.length && bMovie.episodeList?.length == bMovie.latestEpisode) {
                     bMovie.detailLoaded = true;
+                    console.log("cc", bMovie.detailLoaded);
+                    
                 }
             }
 
             const detailMoviePromise = bMovie.detailLoaded ? Promise.resolve(bMovie) : engine.getMovieDetail(bMovie);
             detailMoviePromise.then(detailMovie => {
                 detailScreenDiv.style.filter = null;
+                hideLoadingScreen();
                 console.log(detailMovie);
 
                 movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
