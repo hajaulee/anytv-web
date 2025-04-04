@@ -584,7 +584,7 @@ class Phimmoi extends BaseSource {
 
     // SEARCH MOVIES
     searchMovieUrl(keyword, page) {
-        return `${baseUrl}/tim-kiem/${keyword.replace(" ", "+")}/`
+        return `${this.baseUrl}/tim-kiem/${keyword.replace(" ", "+")}/`
     }
 
     searchMovieSelector() {
@@ -779,7 +779,7 @@ class Engine {
                 }
 
                 // Emit result
-                console.log(`Loaded ${movieList.length} popular movies.`);
+                console.log(`Loaded ${movieList.length} search movies.`);
                 this.updateMovieList(this.searchMovies, movieList);
                 webView.destroy();
                 resolve(this.searchMovies);
