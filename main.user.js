@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.3
+// @version      1.0.4
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.3";
+const VERSION = "1.0.4";
 /* ============================
  * CẤU HÌNH VÀ TEMPLATE HTML
  * ============================ */
@@ -274,6 +274,7 @@ const STYLES = /* css */ `
 
     .detail-movie-container {
         display: flex;
+        flex-wrap: wrap;
     }
 
     .detail-movie-info {
@@ -923,7 +924,7 @@ class Phimmoi extends BaseSource {
                 return [...doc.querySelectorAll("#list_episodes a")].map(it => {
                     const episodeText = it.textContent?.trim();
                     const match = episodeText?.match(/\d+/);
-                    const episodeNum = match ? parseInt(match[0], 10) : null;
+                    const episodeNum = match ? parseInt(match[0], 10) : episodeText;
                     return {
                         title: episodeNum,
                         url: it.getAttribute("href")
