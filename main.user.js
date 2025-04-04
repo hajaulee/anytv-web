@@ -351,7 +351,8 @@ const STYLES = /* css */ `
         display: inline-flex;
         justify-content: center;
         align-items: center;
-        transform: translateY(-50%); // TODO: Fix button not same top with other element
+        vertical-align: top;
+        border: 0;
     }
 
     #snackbar {
@@ -970,6 +971,7 @@ if (SUPPORTED_SOURCES[location.host]) {
         }
 
         function showLastestMovies() {
+            toastMsg("Đang tải danh sách phim mới...");
             engine.getLatestMovies().then(movies => {
                 // console.log("Results:");
 
@@ -995,6 +997,7 @@ if (SUPPORTED_SOURCES[location.host]) {
         }
 
         function showPopularMovies() {
+            toastMsg("Đang tải danh sách phim hot...");
             engine.getPopularMovies().then(movies => {
                 // console.log("Results:");
 
@@ -1148,7 +1151,6 @@ if (SUPPORTED_SOURCES[location.host]) {
         showFavoriteMovies();
         showLastestMovies();
         showPopularMovies();
-        toastMsg("Đang tải danh sách phim");
     }
 
     /* Run in all frame script */
