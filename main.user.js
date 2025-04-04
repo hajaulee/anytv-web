@@ -50,7 +50,7 @@ const MAIN_TEMPLATE = /* html */ `
             <div class="header detail-movie-header">
                 <button class="icon-button" onclick="closeDetail()">〈</button>
                 <span style="flex: 1 1 auto"></span>
-                <button class="icon-button" onclick="refreshMovieDetail()">⟳</button>
+                <button class="icon-button" onclick="refreshMovieDetail()">↻</button>
             </div>
             <div class="content-container detail-movie-container">
                 <div class="detail-movie-info">
