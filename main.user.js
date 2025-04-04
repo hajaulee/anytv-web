@@ -1374,7 +1374,7 @@ if (SUPPORTED_SOURCES[location.host]) {
             }
 
             if (!forceReload) {
-                if (bMovie.episodeList?.length == bMovie.latestEpisode) {
+                if (bMovie.episodeList?.length && bMovie.episodeList?.length == bMovie.latestEpisode) {
                     bMovie.detailLoaded = true;
                 }
             }
@@ -1478,4 +1478,17 @@ if (SUPPORTED_SOURCES[location.host]) {
             }
         });
     }, 1000);
+}
+
+if (location.host == "hajaulee.github.io"){
+    setTimeout(() => {
+        if (window.ANYTVWEB_LATEST_VERSION) {
+            const parsedVersion = VERSION.split('.').map(Number);
+            const latestVersion = window.ANYTVWEB_LATEST_VERSION.split('.').map(Number);
+            const isNewerVersion = latestVersion.some((num, index) => num > (parsedVersion[index] || 0));
+            if (isNewerVersion) {
+                toastMsg("Có phiên bản mới: " + window.ANYTVWEB_LATEST_VERSION);
+            }
+        }
+    }, 2000);
 }
