@@ -77,7 +77,7 @@ const MAIN_TEMPLATE = /* html */ `
                     <span id="player-title"></span>
                 </div>
                 <iframe id="player-iframe" src="" class="player-iframe" frameborder="0"></iframe>
-            </div
+            </div>
         </div>
 
         <!-- Snackbar thông báo -->
