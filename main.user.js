@@ -69,12 +69,15 @@ const MAIN_TEMPLATE = /* html */ `
         </div>
 
         <!-- Màn hình trình phát phim -->
-        <div id="player-screen" class="float-movie-player" style="display: none">
-            <div class="header player-header">
-                <button class="icon-button" onclick="closePlayer()">〈</button>
-                <span id="player-title"></span>
-            </div>
-            <iframe id="player-iframe" src="" class="player-iframe" frameborder="0"></iframe>
+        <div id="player-screen" class="screen" style="display: none">
+            <div class="cover"></div>
+            <div class="float-movie-player">
+                <div class="header player-header">
+                    <button class="icon-button" onclick="closePlayer()">〈</button>
+                    <span id="player-title"></span>
+                </div>
+                <iframe id="player-iframe" src="" class="player-iframe" frameborder="0"></iframe>
+            </div
         </div>
 
         <!-- Snackbar thông báo -->
@@ -124,6 +127,11 @@ const STYLES = /* css */ `
         background: #252728;
         color: white;
         // opacity: 0.5;
+    }
+
+    .screen {
+        width: 100dvw;
+        height: 100dvh;
     }
 
     .category-header {
@@ -285,6 +293,16 @@ const STYLES = /* css */ `
     .movie-episode-watching {
         font-weight: bold;
         color: lightgreen;
+    }
+
+    .cover {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden;
+        background-color: rgba(0, 0, 0, 0.7);
     }
 
     .float-movie-player {
