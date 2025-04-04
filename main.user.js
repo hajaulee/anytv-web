@@ -1,17 +1,18 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.4
+// @version      1.0.5
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.4";
-/* ============================
- * CẤU HÌNH VÀ TEMPLATE HTML
- * ============================ */
+const VERSION = "1.0.5";
+
+// ============================
+// #region TEMPLATE HTML
+// ============================
 
 // Template chính cho giao diện người dùng
 const MAIN_TEMPLATE = /* html */ `
@@ -21,8 +22,8 @@ const MAIN_TEMPLATE = /* html */ `
             <div class="header">
                 <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
                 <span style="flex: 1 1 auto"></span>
-                <button class="icon-button" onclick="openSearch()">🔍</button>
-                <button class="icon-button" onclick="openMenu()">⋮</button>
+                <button id="open-search-button" class="icon-button">🔍</button>
+                <button id="open-menu-button"class="icon-button">⋮</button>
             </div>
             <div class="content-container">
                 <h2 class="category-header">Yêu thích</h2>
@@ -37,9 +38,9 @@ const MAIN_TEMPLATE = /* html */ `
         <!-- Màn hình tìm kiếm -->
         <div id="search-screen" style="display: none">
             <div class="header">
-                <button class="icon-button" onclick="closeSearch()">〈</button>
-                <input id="search-keyword-input" placeholder="Nhập từ khóa..." class="input-search" autofocus onchange="showSearchResultMovies()">
-                <button class="icon-button" onclick="showSearchResultMovies()">🔍</button>
+                <button id="search-back-button" class="icon-button" >〈</button>
+                <input id="search-keyword-input" placeholder="Nhập từ khóa..." class="input-search" autofocus>
+                <button id="search-button" class="icon-button">🔍</button>
             </div>
             <div class="content-container">
                 <div id="search-filters-container" class="search-filters-container"></div>
@@ -51,9 +52,9 @@ const MAIN_TEMPLATE = /* html */ `
         <!-- Màn hình chi tiết phim -->
         <div id="detail-movie-screen" style="display: none">
             <div class="header detail-movie-header">
-                <button class="icon-button" onclick="closeDetail()">〈</button>
+                <button id="detail-back-button" class="icon-button">〈</button>
                 <span style="flex: 1 1 auto"></span>
-                <button class="icon-button" onclick="refreshMovieDetail()">↻</button>
+                <button id="detail-refresh-button" class="icon-button">↻</button>
             </div>
             <div class="content-container detail-movie-container">
                 <div class="detail-movie-info">
@@ -76,7 +77,7 @@ const MAIN_TEMPLATE = /* html */ `
             <div class="cover"></div>
             <div class="float-movie-player">
                 <div class="header player-header">
-                    <button class="icon-button" onclick="closePlayer()">〈</button>
+                    <button id="player-back-button" class="icon-button">〈</button>
                     <span id="player-title"></span>
                 </div>
                 <iframe id="player-iframe" src="" class="player-iframe" frameborder="0"></iframe>
@@ -110,9 +111,14 @@ const EPISODE_TEMPLATE = /* html */ `
 </div>
 `;
 
-/* ============================
- * STYLES (CSS)
- * ============================ */
+// ============================
+// #endregion
+// ============================
+
+
+// ============================
+// #region STYLES (CSS)
+// ============================
 
 const STYLES = /* css */ `
     /* CSS cho giao diện */
@@ -511,9 +517,69 @@ const STYLES = /* css */ `
       }
 `;
 
-/* ============================
- * LỚP CƠ SỞ VÀ NGUỒN DỮ LIỆU
- * ============================ */
+// ============================
+// #endregion
+// ============================
+
+// ============================
+// #region CÁC HÀM TIỆN ÍCH
+// ============================
+
+function fillTemplate(template, obj) {
+    let content = template;
+    Object.keys(obj).forEach(key => {
+        content = content.replaceAll(`{{${key}}}`, obj[key] ?? '');
+    })
+    return content;
+}
+
+function createDom(content) {
+    const templateDiv = document.createElement('div');
+    templateDiv.innerHTML = content;
+    return templateDiv.firstElementChild;
+}
+
+function toastMsg(msg) {
+    var x = document.getElementById("snackbar");
+    x.className = "show";
+    x.innerHTML = msg;
+    setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+}
+
+function setIntervalImmediate(func, interval) {
+    func();
+    return setInterval(func, interval);
+}
+
+function addMainStyle() {
+    // Add the styles to the document
+    const styleTag = document.createElement('style');
+    styleTag.textContent = STYLES;
+    document.head.appendChild(styleTag);
+}
+function addMainScript() {
+    // Add the template to the body
+    const templateDiv = document.createElement('div');
+    templateDiv.innerHTML = MAIN_TEMPLATE;
+    document.body.appendChild(templateDiv.firstElementChild);
+}
+
+function showLoadingScreen() {
+    document.getElementById("loading-screen").style.display = 'flex';
+}
+
+function hideLoadingScreen() {
+    document.getElementById("loading-screen").style.display = 'none';
+}
+
+// ============================
+// #endregion
+// ============================
+
+
+// ============================
+// #region NGUỒN DỮ LIỆU
+// ============================
 
 class BaseSource {
 
@@ -947,6 +1013,14 @@ class Phimmoi extends BaseSource {
     }
 }
 
+// ============================
+// #endregion
+// ============================
+
+
+// ============================
+// #region WEBVIEW
+// ============================
 
 
 class WebView {
@@ -974,6 +1048,14 @@ class WebView {
     }
 }
 
+
+// ============================
+// #endregion
+// ============================
+
+// ============================
+// #region ENGINE
+// ============================
 
 class Engine {
     source = null;
@@ -1197,47 +1279,374 @@ class Engine {
     }
 }
 
-/* ============================
- * CÁC HÀM TIỆN ÍCH
- * ============================ */
+// ============================
+// #endregion
+// ============================
 
-function fillTemplate(template, obj) {
-    let content = template;
-    Object.keys(obj).forEach(key => {
-        content = content.replaceAll(`{{${key}}}`, obj[key] ?? '');
-    })
-    return content;
+
+// ============================
+// #region SCREENS
+// ============================
+
+class BaseScreen {
+
+    constructor(engine, parent) {
+        this.engine = engine;
+        this.parent = parent;
+        this.screenContent = null;
+        this.init();
+    }
+
+    init() {}
+    update() {}
+    hide() {
+        this.screenContent.style.display = 'none';
+    }
+    show() {
+        this.screenContent.style.display = 'block';
+    }
+    back() {
+        this.hide();
+        this.parent?.update();
+        this.parent?.show();
+    }
 }
 
-function createDom(content) {
-    const templateDiv = document.createElement('div');
-    templateDiv.innerHTML = content;
-    return templateDiv.firstElementChild;
+class MainScreen extends BaseScreen {
+
+    init(){
+        this.screenContent = document.getElementById("main-screen");
+        this.favoriteMoviesDiv = document.getElementById("favorite-movies");
+        this.latestMoviesDiv = document.getElementById("latest-movies");
+        this.popularMoviesDiv = document.getElementById("popular-movies");
+        this.searchButton = document.getElementById("open-search-button");
+        this.menuButton = document.getElementById("open-menu-button");
+        
+        this.searchButton.onclick = (e) => {
+            this.gotoSearchSreen();
+        };
+        this.menuButton.onclick = (e) => {
+            toastMsg("Phiên bản: " + VERSION);
+        };
+
+        this.engine.getFavoriteMovies().then(() => this.updateFavoriteMovies());
+        this.engine.getLatestMovies().then(() => this.updateLatestMovies());
+        this.engine.getPopularMovies().then(() => this.updatePopularMovies());
+    }
+
+    update() {
+        this.updateFavoriteMovies();
+        this.updateLatestMovies();
+        this.updatePopularMovies();
+    }
+
+    gotoSearchSreen(){
+        this.hide();
+        const searchScreen = new SearchScreen(this.engine, this);
+        searchScreen.show();
+    }
+
+    gotoDetailScreen(movie) {
+        this.hide();        
+        const detailScreen = new DetailScreen(this.engine, this, movie);
+        detailScreen.show(movie);
+    }
+
+    updateFavoriteMovies() {
+        this.showMovieList(this.favoriteMoviesDiv, this.engine.favoriteMovies);
+    }
+
+    updateLatestMovies() {
+        this.showMovieList(this.latestMoviesDiv, this.engine.latestMovies);
+        const loadMoreButton = createDom(`<button class="load-more-button">+</button>`);
+        loadMoreButton.onclick = (e) => {
+            toastMsg("Đang tải danh sách phim mới...");
+            this.engine.getLatestMovies().then(() => this.updateLatestMovies());
+        }
+        this.latestMoviesDiv.appendChild(loadMoreButton);
+    }
+    
+    updatePopularMovies() {
+        this.showMovieList(this.popularMoviesDiv, this.engine.popularMovies);
+        const loadMoreButton = createDom(`<button class="load-more-button">+</button>`);
+        loadMoreButton.onclick = (e) => {
+            toastMsg("Đang tải danh sách phim hot...");
+            this.engine.getPopularMovies().then(() => this.updatePopularMovies());
+        }
+        this.popularMoviesDiv.appendChild(loadMoreButton);
+    }
+
+    showMovieList(movieListDiv, movies) {
+        movieListDiv.innerHTML = '';
+        movies.forEach(movie => {
+            const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
+                ...movie,
+                watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
+            });
+            const cardDom = createDom(cardContent);
+            cardDom.addEventListener('click', (e) => {
+                console.log("CLick movie: ", movie);
+                
+                this.gotoDetailScreen(movie);
+            })
+            movieListDiv.appendChild(cardDom);
+        });
+    }
+
 }
 
-function toastMsg(msg) {
-    var x = document.getElementById("snackbar");
-    x.className = "show";
-    x.innerHTML = msg;
-    setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+class SearchScreen extends BaseScreen {
+
+    init(){
+        this.screenContent = document.getElementById("search-screen");
+        this.searchKeywordInput = document.getElementById("search-keyword-input");
+        this.movieListDiv = document.getElementById("search-movies");
+        this.searchButton = document.getElementById("search-button");
+        this.backButton = document.getElementById("search-back-button");
+
+        const searchFilterDiv = document.getElementById("search-filters-container");
+        if (searchFilterDiv.innerHTML == '') {
+            const filterConfig = this.engine.source.filterConfig();
+            if (filterConfig) {
+                this.createFilterComponent(searchFilterDiv, filterConfig);
+            } else {
+                searchFilterDiv.style.display = 'none';
+            }
+        }
+
+        this.searchButton.onclick = (e) => {
+            this.search();
+        }
+        this.searchKeywordInput.onkeydown = (e) => {
+            if (e.key == "Enter") {
+                this.search();
+            }
+        }
+        this.backButton.onclick = (e) => this.back();
+    }
+
+    show() {
+        super.show();
+        this.searchKeywordInput.focus();
+    }
+
+    back() {
+        this.hide();
+        this.parent.update();
+        this.parent.show();
+    }
+
+    gotoDetailScreen(movie) {
+        this.hide();        
+        const detailScreen = new DetailScreen(this.engine, this, movie);
+        detailScreen.show(movie);
+    }
+
+    getSearchParams() {
+        const keyword = this.searchKeywordInput.value;
+        const filterConfig = this.engine.source.filterConfig();
+        const filters = Object.keys(filterConfig?.values ?? {}).reduce((acc, key) => {
+            const select = document.getElementById("filter-" + key);
+            acc[key] = select?.value;
+            return acc;
+        }, {});
+        return { keyword, filters };
+    }
+
+    search() {
+        let { keyword, filters } = this.getSearchParams();
+        if (keyword) {
+            toastMsg("Tìm kiếm: " + keyword);
+        } else if (Object.keys(filters).length) {
+            toastMsg("Tìm kiếm theo bộ lọc: " + JSON.stringify(filters).slice(1, -1));
+        }
+
+        this.movieListDiv.innerHTML = '';
+        showLoadingScreen();
+        this.engine.getSearchMovies(keyword, filters).then(movies => {
+            hideLoadingScreen();
+
+            movies.forEach(movie => {
+                const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
+                    ...movie,
+                    watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
+                });
+                const cardDom = createDom(cardContent);
+                cardDom.onclick = (e) => this.gotoDetailScreen(movie);
+                this.movieListDiv.appendChild(cardDom);
+            });
+
+            const loadMoreButton = createDom(`<button class="load-more-button">+</button>`);
+            loadMoreButton.onclick = (e) => this.search();
+            this.movieListDiv.appendChild(loadMoreButton);
+        });
+    }
+
+    createFilterComponent(searchFilterDiv, filterConfig) {
+        const filterContentContainerDiv = createDom(`<div class="filter-content-container"</div>`);
+        searchFilterDiv.appendChild(filterContentContainerDiv);
+        Object.keys(filterConfig.values).forEach(key => {
+            const filter = filterConfig.values[key];
+            const filterDiv = createDom(`<div class="filter-container"><label>${filter.label}</label></div>`);
+            const select = document.createElement('select');
+            select.id = "filter-" + key;
+            filter.options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.innerHTML = option.label;
+                select.appendChild(optionElement);
+            });
+            filterDiv.appendChild(select);
+            filterContentContainerDiv.appendChild(filterDiv);
+        });
+        if (filterConfig.notice) {
+            const noticeDiv = createDom(`<div class="filter-notice">${filterConfig.notice}</div>`);
+            searchFilterDiv.appendChild(noticeDiv);
+        }
+    }
 }
 
-function setIntervalImmediate(func, interval) {
-    func();
-    return setInterval(func, interval);
+class DetailScreen extends BaseScreen {
+
+    constructor(engine, parent, movie) {
+        super(engine, parent);
+        this.movie = movie;
+        this._init();
+    }
+
+    _init() {
+        this.screenContent = document.getElementById("detail-movie-screen");
+        this.movieTitleDiv = document.getElementById("movie-title");
+        this.refreshButton = document.getElementById("detail-refresh-button");
+        this.backButton = document.getElementById("detail-back-button");
+        this.addFavoriteButton = document.getElementById("add-favorite");
+        this.removeFavoriteButton = document.getElementById("remove-favorite");
+
+        this.engine.selectingMovie = this.movie;
+        this.forceReload = false;
+
+
+        this.addFavoriteButton.onclick = () => {
+            engine.addFavotiteMovie(bMovie);
+            addFavoriteButton.style.display = 'none';
+            removeFavoriteButton.style.display = 'block';
+        }
+        this.removeFavoriteButton.onclick = () => {
+            engine.removeFavotiteMovie(bMovie);
+            addFavoriteButton.style.display = 'block';
+            removeFavoriteButton.style.display = 'none';
+        }
+        this.refreshButton.onclick = (e) => {
+            this.movie.detailLoaded = false;
+            this.forceReload = true;
+            this.update();
+        }        
+        this.backButton.onclick = (e) => {            
+            this.back();
+        }
+
+        this.update();
+    }
+
+    update() {
+        const bMovie = this.movie;
+
+        showLoadingScreen();
+        this.screenContent.style.filter = 'blur(10px)';
+
+        const movieDetailDiv = document.getElementById('detail-movie-screen');
+        movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${bMovie.backgroundImageUrl}')`;
+        movieDetailDiv.querySelector("#detail-movie-image").src = bMovie.cardImageUrl;
+        movieDetailDiv.querySelector("#detail-movie-title").innerHTML = bMovie.title;
+
+        const episodeListDiv = document.querySelector(".episode-list");
+        episodeListDiv.innerHTML = '';
+
+        if (!this.forceReload) {
+            if (bMovie.episodeList?.length && bMovie.episodeList?.length == bMovie.latestEpisode) {
+                bMovie.detailLoaded = true;                
+            }
+        }
+
+        const detailMoviePromise = bMovie.detailLoaded ? Promise.resolve(bMovie) : this.engine.getMovieDetail(bMovie);
+        detailMoviePromise.then(detailMovie => {
+            this.screenContent.style.filter = null;
+            hideLoadingScreen();
+            console.log(detailMovie);
+
+            movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
+            movieDetailDiv.querySelector("#detail-movie-image").src = detailMovie.cardImageUrl;
+            movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
+            movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
+            movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
+
+            if (this.engine.favoriteMovies.some(m => m.title == detailMovie.title)) {
+                this.addFavoriteButton.style.display = 'none';
+                this.removeFavoriteButton.style.display = 'block';
+            } else {
+                this.addFavoriteButton.style.display = 'block';
+                this.removeFavoriteButton.style.display = 'none';
+            }
+
+            detailMovie.episodeList?.forEach(episode => {
+                const eleContent = fillTemplate(EPISODE_TEMPLATE, {
+                    title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
+                });
+                const episodeItem = createDom(eleContent);
+                if (Number(episode.title) < Number(detailMovie.watchingEpisode)) {
+                    episodeItem.classList.add("movie-episode-watched")
+                }
+                if (episode.title == detailMovie.watchingEpisode) {
+                    episodeItem.classList.add("movie-episode-watching")
+                }
+                episodeItem.addEventListener('click', () => {
+                    this.showMoviePlayer(detailMovie, episode);
+                })
+                episodeListDiv.appendChild(episodeItem);
+            });
+
+        });
+    }
+
+    showMoviePlayer(movie, episode){
+        new PlayerScreen(this.engine, this, movie, episode).show();
+    }
 }
 
-function addMainStyle() {
-    // Add the styles to the document
-    const styleTag = document.createElement('style');
-    styleTag.textContent = STYLES;
-    document.head.appendChild(styleTag);
-}
-function addMainScript() {
-    // Add the template to the body
-    const templateDiv = document.createElement('div');
-    templateDiv.innerHTML = MAIN_TEMPLATE;
-    document.body.appendChild(templateDiv.firstElementChild);
+class PlayerScreen extends BaseScreen {
+
+    constructor(engine, parent, movie, episode) {
+        super(engine, parent);
+        this.movie = movie;
+        this.episode = episode;
+        this._init();
+    }
+
+    _init() {
+        this.screenContent = document.getElementById("player-screen");
+        this.playerIframe = document.getElementById("player-iframe");
+        this.playerTitleDiv = document.getElementById("player-title");
+        this.backButton = document.getElementById("player-back-button");
+
+        this.backButton.onclick = (e) => {            
+            this.back();
+        }
+
+        this.update();
+    }
+
+    update(){
+        this.movie.watchingEpisode = this.episode.title;
+        this.engine.saveFavoriteMovies();
+
+        this.playerIframe.src = this.episode.url;
+        this.playerTitleDiv.innerHTML = `${this.movie.title} - ${this.episode.title}`;
+    }
+
+    hide() {
+        super.hide();
+        this.playerIframe.src = '';
+    }
 }
 
 const SUPPORTED_SOURCES = {
@@ -1255,294 +1664,9 @@ if (SUPPORTED_SOURCES[location.host]) {
         var source = SUPPORTED_SOURCES[location.host];
         var engine = new Engine(source);
 
-        const mainScreenDiv = document.getElementById("main-screen");
-        const detailScreenDiv = document.getElementById("detail-movie-screen");
-        const playerScreenDiv = document.getElementById("player-screen");
-        const searchScreenDiv = document.getElementById("search-screen");
-        const loadingScreenDiv = document.getElementById("loading-screen");
+        const mainScreen = new MainScreen(engine, null);
+        mainScreen.show();
 
-
-        /* ============================
-        * CÁC HÀM XỬ LÝ SỰ KIỆN
-        * ============================ */
-        
-        function closePlayer() {
-            playerScreenDiv.style.display = 'none';
-            document.getElementById("player-iframe").src = '';
-        }
-
-        function closeDetail() {
-            closePlayer();
-            showFavoriteMovies();
-            detailScreenDiv.style.display = 'none';
-            mainScreenDiv.style.display = 'block';
-        }
-
-        function openSearch() {
-            mainScreenDiv.style.display = 'none';
-            searchScreenDiv.style.display = 'block';
-            document.getElementById("search-keyword-input").focus();
-
-            const searchFilterDiv = document.getElementById("search-filters-container");
-            if (searchFilterDiv.innerHTML == '') {
-                const filterConfig = engine.source.filterConfig();
-                if (filterConfig) {
-                    const filterContentContainerDiv = createDom(`<div class="filter-content-container"</div>`);
-                    searchFilterDiv.appendChild(filterContentContainerDiv);
-                    Object.keys(filterConfig.values).forEach(key => {
-                        const filter = filterConfig.values[key];
-                        const filterDiv = createDom(`<div class="filter-container"><label>${filter.label}</label></div>`);
-                        const select = document.createElement('select');
-                        select.id = "filter-" + key;
-                        filter.options.forEach(option => {
-                            const optionElement = document.createElement('option');
-                            optionElement.value = option.value;
-                            optionElement.innerHTML = option.label;
-                            select.appendChild(optionElement);
-                        });
-                        filterDiv.appendChild(select);
-                        filterContentContainerDiv.appendChild(filterDiv);
-                    });
-                    if (filterConfig.notice) {
-                        const noticeDiv = createDom(`<div class="filter-notice">${filterConfig.notice}</div>`);
-                        searchFilterDiv.appendChild(noticeDiv);
-                    }
-                } else {
-                    searchFilterDiv.style.display = 'none';
-                }
-            }
-        }
-
-        function openMenu() {
-            toastMsg("Phiên bản: " + VERSION);
-        }
-
-        function closeSearch() {
-            searchScreenDiv.style.display = 'none';
-            mainScreenDiv.style.display = 'block';
-        }
-
-        function showLoadingScreen() {
-            loadingScreenDiv.style.display = 'flex';
-        }
-
-        function hideLoadingScreen() {
-            loadingScreenDiv.style.display = 'none';
-        }
-
-        function showFavoriteMovies() {
-            engine.getFavoriteMovies().then(movies => {
-
-                const movieListDiv = document.getElementById("favorite-movies");
-                movieListDiv.innerHTML = '';
-                movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
-                        ...movie,
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
-                    });
-                    const cardDom = createDom(cardContent);
-                    cardDom.addEventListener('click', (e) => {
-                        showDetailMovie(movie);
-                    })
-                    movieListDiv.appendChild(cardDom);
-                });
-            });
-        }
-
-        function showLastestMovies() {
-            toastMsg("Đang tải danh sách phim mới...");
-            engine.getLatestMovies().then(movies => {
-                // console.log("Results:");
-
-                // console.log(movies);
-                // console.log(engine);
-
-                const movieListDiv = document.getElementById("latest-movies");
-                movieListDiv.innerHTML = '';
-                movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
-                        ...movie,
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
-                    });
-                    const cardDom = createDom(cardContent);
-                    cardDom.addEventListener('click', (e) => {
-                        showDetailMovie(movie);
-                    })
-                    movieListDiv.appendChild(cardDom);
-                });
-
-                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="showLastestMovies()">+</button>`))
-            });
-        }
-
-        function showPopularMovies() {
-            toastMsg("Đang tải danh sách phim hot...");
-            engine.getPopularMovies().then(movies => {
-                // console.log("Results:");
-
-                // console.log(movies);
-                // console.log(engine);
-
-                const movieListDiv = document.getElementById("popular-movies");
-                movieListDiv.innerHTML = '';
-                movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
-                        ...movie,
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
-                    });
-                    const cardDom = createDom(cardContent);
-                    cardDom.addEventListener('click', (e) => {
-                        showDetailMovie(movie);
-                    })
-                    movieListDiv.appendChild(cardDom);
-                });
-
-                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="showPopularMovies()">+</button>`))
-
-            });
-
-        }
-
-        function showSearchResultMovies() {
-            const keyword = document.getElementById('search-keyword-input').value;
-            const filterConfig = engine.source.filterConfig();
-            const filters = Object.keys(filterConfig?.values ?? {}).reduce((acc, key) => {
-                const select = document.getElementById("filter-" + key);
-                acc[key] = select?.value;
-                return acc;
-            }, {});
-            if (keyword) {
-                toastMsg("Tìm kiếm: " + keyword);
-            } else if (Object.keys(filters).length) {
-                toastMsg("Tìm kiếm theo bộ lọc: " + JSON.stringify(filters));
-            }
-
-            showLoadingScreen();
-            engine.getSearchMovies(keyword, filters).then(movies => {
-                hideLoadingScreen();
-
-                const movieListDiv = document.getElementById("search-movies");
-                movieListDiv.innerHTML = '';
-                movies.forEach(movie => {
-                    const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
-                        ...movie,
-                        watchingEpisode: movie.watchingEpisode ? `${movie.watchingEpisode}/` : ''
-                    });
-                    const cardDom = createDom(cardContent);
-                    cardDom.addEventListener('click', (e) => {
-                        showDetailMovie(movie);
-                    })
-                    movieListDiv.appendChild(cardDom);
-                });
-
-                movieListDiv.appendChild(createDom(`<button class="load-more-button" onclick="showSearchResultMovies()">+</button>`))
-            });
-        }
-
-        function showDetailMovie(bMovie, forceReload) {
-            engine.selectingMovie = bMovie;
-
-            showLoadingScreen();
-            mainScreenDiv.style.display = 'none';
-            searchScreenDiv.style.display = 'none';
-            detailScreenDiv.style.display = 'block';
-            detailScreenDiv.style.filter = 'blur(10px)';
-
-            const movieDetailDiv = document.getElementById('detail-movie-screen');
-            movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${bMovie.backgroundImageUrl}')`;
-            movieDetailDiv.querySelector("#detail-movie-image").src = bMovie.cardImageUrl;
-            movieDetailDiv.querySelector("#detail-movie-title").innerHTML = bMovie.title;
-
-            const episodeListDiv = document.querySelector(".episode-list");
-            episodeListDiv.innerHTML = '';
-
-            const addFavoriteButton = document.getElementById("add-favorite");
-            const removeFavoriteButton = document.getElementById("remove-favorite");
-
-            addFavoriteButton.onclick = () => {
-                engine.addFavotiteMovie(bMovie);
-                addFavoriteButton.style.display = 'none';
-                removeFavoriteButton.style.display = 'block';
-            }
-            removeFavoriteButton.onclick = () => {
-                engine.removeFavotiteMovie(bMovie);
-                addFavoriteButton.style.display = 'block';
-                removeFavoriteButton.style.display = 'none';
-            }
-
-            if (!forceReload) {
-                if (bMovie.episodeList?.length && bMovie.episodeList?.length == bMovie.latestEpisode) {
-                    bMovie.detailLoaded = true;
-                    console.log("cc", bMovie.detailLoaded);
-                    
-                }
-            }
-
-            const detailMoviePromise = bMovie.detailLoaded ? Promise.resolve(bMovie) : engine.getMovieDetail(bMovie);
-            detailMoviePromise.then(detailMovie => {
-                detailScreenDiv.style.filter = null;
-                hideLoadingScreen();
-                console.log(detailMovie);
-
-                movieDetailDiv.querySelector("#detail-movie-bg").style.backgroundImage = `url('${detailMovie.backgroundImageUrl}')`;
-                movieDetailDiv.querySelector("#detail-movie-image").src = detailMovie.cardImageUrl;
-                movieDetailDiv.querySelector("#detail-movie-title").innerHTML = detailMovie.title;
-                movieDetailDiv.querySelector('#detail-movie-genres').innerHTML = detailMovie.genres;
-                movieDetailDiv.querySelector('#detail-movie-description').innerHTML = detailMovie.description;
-
-                if (engine.favoriteMovies.some(m => m.title == detailMovie.title)) {
-                    addFavoriteButton.style.display = 'none';
-                    removeFavoriteButton.style.display = 'block';
-                } else {
-                    addFavoriteButton.style.display = 'block';
-                    removeFavoriteButton.style.display = 'none';
-                }
-
-                detailMovie.episodeList?.forEach(episode => {
-                    const eleContent = fillTemplate(EPISODE_TEMPLATE, {
-                        title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
-                    });
-                    const episodeItem = createDom(eleContent);
-                    if (Number(episode.title) < Number(detailMovie.watchingEpisode)) {
-                        episodeItem.classList.add("movie-episode-watched")
-                    }
-                    if (episode.title == detailMovie.watchingEpisode) {
-                        episodeItem.classList.add("movie-episode-watching")
-                    }
-                    episodeItem.addEventListener('click', () => {
-                        showMoviePlayer(detailMovie, episode);
-                    })
-                    episodeListDiv.appendChild(episodeItem);
-                });
-
-            });
-        }
-
-        function refreshMovieDetail() {
-            toastMsg("Tải lại thông tin phim")
-            if (engine.selectingMovie) {
-                engine.selectingMovie.detailLoaded = false;
-                showDetailMovie(engine.selectingMovie, true);
-            }
-        }
-
-        function showMoviePlayer(movie, episode) {
-            movie.watchingEpisode = episode.title;
-            engine.saveFavoriteMovies();
-            // Update displaying watching episode
-            showDetailMovie(movie);
-
-            playerScreenDiv.style.display = 'block';
-            const playerIframe = document.getElementById("player-iframe");
-            playerIframe.src = episode.url;
-
-            const playerTitleDiv = document.getElementById("player-title");
-            playerTitleDiv.innerHTML = `${movie.title} - ${episode.title}`;
-        }
-
-        showFavoriteMovies();
-        showLastestMovies();
-        showPopularMovies();
     } else {
         // IFRAME SCRIPT
 
