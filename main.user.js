@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.8
+// @version      1.0.9
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.8";
+const VERSION = "1.0.9";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1473,14 +1473,14 @@ class SearchScreen extends BaseScreen {
         if (keyword) {
             toastMsg("Tìm kiếm: " + keyword);
         } else if (Object.keys(filters).length) {
-            toastMsg("Tìm kiếm theo bộ lọc: " + JSON.stringify(filters).slice(1, -1));
+            toastMsg("Tìm kiếm theo bộ lọc: " + JSON.stringify(filters).replaceAll('"', '').slice(1, -1));
         }
 
-        this.movieListDiv.innerHTML = '';
         showLoadingScreen();
         this.engine.getSearchMovies(keyword, filters).then(movies => {
             hideLoadingScreen();
 
+            this.movieListDiv.innerHTML = '';
             movies.forEach(movie => {
                 const cardContent = fillTemplate(MOVIE_CARD_TEMPLATE, {
                     ...movie,
