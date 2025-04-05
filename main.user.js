@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.18
+// @version      1.0.19
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.18";
+const VERSION = "1.0.19";
 
 // ============================
 // #region TEMPLATE HTML
@@ -583,7 +583,7 @@ function formatDuration(duration) {
     const hours = Math.floor(duration / 3600);
     const minutes = Math.floor((duration % 3600) / 60);
     const seconds = Math.floor(duration % 60);
-    return `${hours > 0 ? zeroPad(hours, 2) + ':' : ''}${minutes > 0 ? zeroPad(minutes, 2) + ':' : ''}${zeroPad(seconds, 2)}`;
+    return `${hours > 0 ? zeroPad(hours, 2) + ':' : ''}${zeroPad(minutes, 2) + ':'}${zeroPad(seconds, 2)}`;
 }
 
 function addMainStyle() {
