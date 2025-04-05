@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
-// @namespace    http://hajaulee.github.io
-// @version      1.0.11
+// @namespace    http://hajaulee.github.io/anytv-web/
+// @version      1.0.18
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.11";
+const VERSION = "1.0.18";
 
 // ============================
 // #region TEMPLATE HTML
@@ -108,6 +108,7 @@ const MOVIE_CARD_TEMPLATE = /* html */ `
 const EPISODE_TEMPLATE = /* html */ `
 <div class="movie-episode">
     <div class="movie-episode-title">{{title}}</div>
+    <div class="movie-episode-watched-time"></div>
 </div>
 `;
 
@@ -336,7 +337,10 @@ const STYLES = /* css */ `
         height: 56px;
     }
     .movie-episode-title {
-        font: 24px;
+        font-size: 16px;
+    }
+    .movie-episode-watched-time {
+        font-size: 12px;
     }
     .movie-episode-watched {
         opacity: 0.5;
@@ -571,6 +575,16 @@ function removeEmptyValues(obj) {
     );
 }
 
+function zeroPad(num, size) {
+    return String(num).padStart(size, '0');
+}
+
+function formatDuration(duration) {
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    const seconds = Math.floor(duration % 60);
+    return `${hours > 0 ? zeroPad(hours, 2) + ':' : ''}${minutes > 0 ? zeroPad(minutes, 2) + ':' : ''}${zeroPad(seconds, 2)}`;
+}
 
 function addMainStyle() {
     // Add the styles to the document
@@ -1116,6 +1130,26 @@ class Engine {
         return movieInPool;
     }
 
+    updateEpisodeList(oldList, newList) {
+        if (!oldList?.length) {
+            return newList;
+        }
+        const episodeDict = oldList.reduce((acc, episode) => {
+            acc[episode.url] = episode;
+            return acc;
+        }, {});
+
+        // Copy info from old to new to keep currentTime and duration info
+        newList.forEach(episode => {
+            if (episodeDict[episode.url]) {
+                episode.currentTime = episodeDict[episode.url].currentTime;
+                episode.duration = episodeDict[episode.url].duration;
+            }
+        });
+
+        return newList;
+    }
+
     updateMovieList(currentList, newData) {
         newData.forEach(movie => {
             if (!currentList.some(m => m.title == movie.title)) {
@@ -1211,7 +1245,7 @@ class Engine {
             const webLoadingPromise = webView.loadUrl(movie.movieUrl);
 
             const handleResults = (detailMovie, episodes) => {
-                detailMovie.episodeList = episodes;
+                detailMovie.episodeList = this.updateEpisodeList(detailMovie.episodeList, episodes);
                 detailMovie.detailLoaded = true;
                 if (!detailMovie.latestEpisode) {
                     detailMovie.latestEpisode = episodes[episodes.length - 1]?.title;
@@ -1614,12 +1648,17 @@ class DetailScreen extends BaseScreen {
                     title: isNaN(Number(episode.title)) ? episode.title : `Tập ${episode.title}`
                 });
                 const episodeItem = createDom(eleContent);
+
                 if (Number(episode.title) < Number(detailMovie.watchingEpisode)) {
                     episodeItem.classList.add("movie-episode-watched")
                 }
                 if (episode.title == detailMovie.watchingEpisode) {
                     episodeItem.classList.add("movie-episode-watching")
                 }
+                if (episode.currentTime) {
+                    episodeItem.querySelector(".movie-episode-watched-time").innerHTML = `${formatDuration(episode.currentTime)} / ${formatDuration(episode.duration)}`;
+                }
+
                 episodeItem.addEventListener('click', () => {
                     this.showMoviePlayer(detailMovie, episode);
                 })
@@ -1684,6 +1723,8 @@ const SUPPORTED_SOURCES = {
     'phimmoichill.best': new Phimmoi()
 }
 
+const DURATION_THRESHOLD = 120; // seconds, under this duration is considered an ad
+
 if (SUPPORTED_SOURCES[location.host]) {
     // MAIN FRAME
     if (window.self == window.top) {
@@ -1697,6 +1738,20 @@ if (SUPPORTED_SOURCES[location.host]) {
         const mainScreen = new MainScreen(engine, null);
         mainScreen.show();
 
+        // Listen for messages from the iframe
+        window.addEventListener("message", (event) => {
+            if (event.data.type === 'videoInfo') {
+                const { currentTime, duration, videoUrl } = event.data;
+                const currentEpisode = engine.selectingMovie.episodeList.find(episode => episode.title == engine.selectingMovie.watchingEpisode);
+                if (currentEpisode && currentEpisode.currentTime != currentTime) {
+                    currentEpisode.currentTime = currentTime;
+                    currentEpisode.duration = duration;
+                    engine.saveFavoriteMovies();
+                }
+                console.log(`Video Info: ${currentTime}/${duration} - ${videoUrl}`);
+            }
+        });
+
     } else {
         // IFRAME SCRIPT
 
@@ -1705,6 +1760,29 @@ if (SUPPORTED_SOURCES[location.host]) {
             const images = document.querySelectorAll("img");
             images.forEach(image => {
                 image.style.display = "none";
+            });
+        }, 1000);
+
+        // Handle video
+        setIntervalImmediate(() => {
+            Array.from(document.getElementsByTagName("video")).forEach((element) => {
+
+                // Main video
+                if (element.duration > DURATION_THRESHOLD){
+                    
+                    // Stop video when it is finished to prevent auto-play next video
+                    if (element.currentTime > element.duration - 1){
+                        element.pause();
+                    }
+
+                    // Send current time and duration to parent window
+                    window.parent.postMessage({
+                        type: 'videoInfo',
+                        currentTime: Math.round(element.currentTime),
+                        duration: Math.round(element.duration),
+                        videoUrl: element.src
+                    }, "*");
+                }
             });
         }, 1000);
     }
@@ -1721,10 +1799,12 @@ if (SUPPORTED_SOURCES[location.host]) {
         }
     }, 1000);
 
-    // Remove video ads
+    // Handle video
     setIntervalImmediate(() => {
         Array.from(document.getElementsByTagName("video")).forEach((element) => {
-            if (element.duration < 120 && element.currentTime < element.duration) {
+
+            // Check if the video is an advertisement by duration threshold
+            if (element.duration < DURATION_THRESHOLD && element.currentTime < element.duration) {
                 console.log("Skipped an ads!!!!");
                 element.muted = true;
                 element.volume = 0;
