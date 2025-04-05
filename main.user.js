@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io
-// @version      1.0.10
+// @version      1.0.11
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.10";
+const VERSION = "1.0.11";
 
 // ============================
 // #region TEMPLATE HTML
@@ -551,14 +551,14 @@ function setIntervalImmediate(func, interval) {
     return setInterval(func, interval);
 }
 
-function tryUtil(func, interval, timeout){
+function tryUtil(func, interval, timeout) {
     let result = func();
     let totalTime = 0;
-    if (!result){
+    if (!result) {
         const timer = setInterval(() => {
             let result1 = func();
             totalTime += interval;
-            if (result1 || totalTime > timeout){
+            if (result1 || totalTime > timeout) {
                 clearInterval(timer);
             }
         }, interval);
@@ -567,9 +567,9 @@ function tryUtil(func, interval, timeout){
 
 function removeEmptyValues(obj) {
     return Object.fromEntries(
-      Object.entries(obj).filter(([_, value]) => value != null && value !== '')
+        Object.entries(obj).filter(([_, value]) => value != null && value !== '')
     );
-  }
+}
 
 
 function addMainStyle() {
@@ -714,56 +714,56 @@ class Animet extends BaseSource {
                 genre: {
                     label: "Thể loại",
                     options: [
-                        { value: "", label: "" }, 
-                        { value: "seinen", label: "Seinen" }, 
-                        { value: "ac-quy", label: "Ác Quỷ" }, 
-                        { value: "am-nhac", label: "Âm Nhạc" }, 
-                        { value: "anime", label: "Anime" }, 
-                        { value: "bao-luc", label: "Bạo Lực" }, 
-                        { value: "bi-an", label: "Bí Ẩn" }, 
-                        { value: "bi-an-sieu-nhien", label: "Bíẩn - Siêu nhiên" }, 
-                        { value: "cars", label: "Cars" }, 
-                        { value: "cartoon", label: "Cartoon" }, 
-                        { value: "cgdct", label: "CGDCT" }, 
-                        { value: "chien-tranh", label: "Chiến Tranh" }, 
-                        { value: "cn-animation", label: "CN Animation" }, 
-                        { value: "co-trang", label: "Cổ Trang" }, 
-                        { value: "dementia", label: "Dementia" }, 
-                        { value: "di-gioi", label: "Dị Giới" }, 
-                        { value: "drama", label: "Drama" }, 
-                        { value: "du-hanh-thoi-gian", label: "Du Hành Thời Gian" }, 
-                        { value: "ecchi", label: "Ecchi" }, 
-                        { value: "game", label: "Game" }, 
-                        { value: "gay-can", label: "Gây cấn" }, 
-                        { value: "gia-tuong", label: "Giả Tưởng" }, 
-                        { value: "gia-dinh", label: "Gia Đình" }, 
-                        { value: "hai-huoc", label: "Hài Hước" }, 
-                        { value: "haiten", label: "Haiten" }, 
-                        { value: "hanh-dong", label: "Hành Động" }, 
-                        { value: "harem", label: "Harem" }, 
-                        { value: "hinh-su", label: "Hình Sự" }, 
-                        { value: "hoan-doi-gioi-tinh", label: "Hoán Đổi Giới Tính" }, 
-                        { value: "hoat-hinh", label: "Hoạt Hình" }, 
-                        { value: "hoc-duong", label: "Học Đường" }, 
-                        { value: "hoi-hop", label: "Hồi hộp" }, 
+                        { value: "", label: "" },
+                        { value: "seinen", label: "Seinen" },
+                        { value: "ac-quy", label: "Ác Quỷ" },
+                        { value: "am-nhac", label: "Âm Nhạc" },
+                        { value: "anime", label: "Anime" },
+                        { value: "bao-luc", label: "Bạo Lực" },
+                        { value: "bi-an", label: "Bí Ẩn" },
+                        { value: "bi-an-sieu-nhien", label: "Bíẩn - Siêu nhiên" },
+                        { value: "cars", label: "Cars" },
+                        { value: "cartoon", label: "Cartoon" },
+                        { value: "cgdct", label: "CGDCT" },
+                        { value: "chien-tranh", label: "Chiến Tranh" },
+                        { value: "cn-animation", label: "CN Animation" },
+                        { value: "co-trang", label: "Cổ Trang" },
+                        { value: "dementia", label: "Dementia" },
+                        { value: "di-gioi", label: "Dị Giới" },
+                        { value: "drama", label: "Drama" },
+                        { value: "du-hanh-thoi-gian", label: "Du Hành Thời Gian" },
+                        { value: "ecchi", label: "Ecchi" },
+                        { value: "game", label: "Game" },
+                        { value: "gay-can", label: "Gây cấn" },
+                        { value: "gia-tuong", label: "Giả Tưởng" },
+                        { value: "gia-dinh", label: "Gia Đình" },
+                        { value: "hai-huoc", label: "Hài Hước" },
+                        { value: "haiten", label: "Haiten" },
+                        { value: "hanh-dong", label: "Hành Động" },
+                        { value: "harem", label: "Harem" },
+                        { value: "hinh-su", label: "Hình Sự" },
+                        { value: "hoan-doi-gioi-tinh", label: "Hoán Đổi Giới Tính" },
+                        { value: "hoat-hinh", label: "Hoạt Hình" },
+                        { value: "hoc-duong", label: "Học Đường" },
+                        { value: "hoi-hop", label: "Hồi hộp" },
                         { value: "huyen-ao", label: "Huyền Ảo" },
-                        { value: "huyen-huyen", label: "Huyền Huyễn" }, 
-                        { value: "isekai", label: "Isekai" }, 
-                        { value: "josei", label: "Josei" }, 
-                        { value: "khoa-hoc", label: "Khoa Học" }, 
-                        { value: "kids", label: "Kids" }, 
-                        { value: "kiem-hiep", label: "KiếmHiệp" }, 
-                        { value: "kinh-di", label: "Kinh Dị" }, 
-                        { value: "lang-man", label: "Lãng mạn" }, 
-                        { value: "lich-su", label: "Lịch Sử" }, 
-                        { value: "live-action", label: "Live Action" }, 
-                        { value: "ma-ca-rong", label: "Ma Cà Rồng" }, 
-                        { value: "mecha", label: "Mecha" }, 
-                        { value: "movie-ova", label: "Movie & OVA" }, 
-                        { value: "mystery", label: "Mystery" }, 
-                        { value: "ninja", label: "Ninja" }, 
-                        { value: "ona", label: "ONA" }, 
-                        { value: "parody", label: "Parody" }, 
+                        { value: "huyen-huyen", label: "Huyền Huyễn" },
+                        { value: "isekai", label: "Isekai" },
+                        { value: "josei", label: "Josei" },
+                        { value: "khoa-hoc", label: "Khoa Học" },
+                        { value: "kids", label: "Kids" },
+                        { value: "kiem-hiep", label: "KiếmHiệp" },
+                        { value: "kinh-di", label: "Kinh Dị" },
+                        { value: "lang-man", label: "Lãng mạn" },
+                        { value: "lich-su", label: "Lịch Sử" },
+                        { value: "live-action", label: "Live Action" },
+                        { value: "ma-ca-rong", label: "Ma Cà Rồng" },
+                        { value: "mecha", label: "Mecha" },
+                        { value: "movie-ova", label: "Movie & OVA" },
+                        { value: "mystery", label: "Mystery" },
+                        { value: "ninja", label: "Ninja" },
+                        { value: "ona", label: "ONA" },
+                        { value: "parody", label: "Parody" },
                         { value: "phep-thuat", label: "Phép Thuật" },
                         { value: "phieu-luu", label: "PhiêuLưu" },
                         { value: "police", label: "Police" },
@@ -809,14 +809,14 @@ class Animet extends BaseSource {
                     ].concat([...Array(20).keys()].map(it => {
                         const year = new Date().getFullYear() - it;
                         return { value: year, label: year }
-                    })) 
+                    }))
                 }
             },
             notice: "Không thể dùng bộ lọc khi nhập từ khóa tìm kiếm",
         }
     }
     searchMovieUrl(keyword, filters, page) {
-        if (keyword){
+        if (keyword) {
             keyword = keyword.replaceAll(" ", "-")
             return `${this.baseUrl}/tim-kiem/${keyword}/trang-${page}.html`;
         } else {
@@ -1318,8 +1318,8 @@ class BaseScreen {
         this.init();
     }
 
-    init() {}
-    update() {}
+    init() { }
+    update() { }
     hide() {
         this.screenContent.style.display = 'none';
     }
@@ -1335,14 +1335,14 @@ class BaseScreen {
 
 class MainScreen extends BaseScreen {
 
-    init(){
+    init() {
         this.screenContent = document.getElementById("main-screen");
         this.favoriteMoviesDiv = document.getElementById("favorite-movies");
         this.latestMoviesDiv = document.getElementById("latest-movies");
         this.popularMoviesDiv = document.getElementById("popular-movies");
         this.searchButton = document.getElementById("open-search-button");
         this.menuButton = document.getElementById("open-menu-button");
-        
+
         this.searchButton.onclick = (e) => {
             this.gotoSearchSreen();
         };
@@ -1361,14 +1361,14 @@ class MainScreen extends BaseScreen {
         this.updatePopularMovies();
     }
 
-    gotoSearchSreen(){
+    gotoSearchSreen() {
         this.hide();
         const searchScreen = new SearchScreen(this.engine, this);
         searchScreen.show();
     }
 
     gotoDetailScreen(movie) {
-        this.hide();        
+        this.hide();
         const detailScreen = new DetailScreen(this.engine, this, movie);
         detailScreen.show(movie);
     }
@@ -1386,7 +1386,7 @@ class MainScreen extends BaseScreen {
         }
         this.latestMoviesDiv.appendChild(loadMoreButton);
     }
-    
+
     updatePopularMovies() {
         this.showMovieList(this.popularMoviesDiv, this.engine.popularMovies);
         const loadMoreButton = createDom(`<button class="load-more-button">+</button>`);
@@ -1407,7 +1407,7 @@ class MainScreen extends BaseScreen {
             const cardDom = createDom(cardContent);
             cardDom.addEventListener('click', (e) => {
                 console.log("CLick movie: ", movie);
-                
+
                 this.gotoDetailScreen(movie);
             })
             movieListDiv.appendChild(cardDom);
@@ -1418,7 +1418,7 @@ class MainScreen extends BaseScreen {
 
 class SearchScreen extends BaseScreen {
 
-    init(){
+    init() {
         this.screenContent = document.getElementById("search-screen");
         this.searchKeywordInput = document.getElementById("search-keyword-input");
         this.movieListDiv = document.getElementById("search-movies");
@@ -1458,7 +1458,7 @@ class SearchScreen extends BaseScreen {
     }
 
     gotoDetailScreen(movie) {
-        this.hide();        
+        this.hide();
         const detailScreen = new DetailScreen(this.engine, this, movie);
         detailScreen.show(movie);
     }
@@ -1561,8 +1561,8 @@ class DetailScreen extends BaseScreen {
             this.movie.detailLoaded = false;
             this.forceReload = true;
             this.update();
-        }        
-        this.backButton.onclick = (e) => {            
+        }
+        this.backButton.onclick = (e) => {
             this.back();
         }
 
@@ -1585,7 +1585,7 @@ class DetailScreen extends BaseScreen {
 
         if (!this.forceReload) {
             if (bMovie.episodeList?.length && bMovie.episodeList?.length == bMovie.latestEpisode) {
-                bMovie.detailLoaded = true;                
+                bMovie.detailLoaded = true;
             }
         }
 
@@ -1629,7 +1629,7 @@ class DetailScreen extends BaseScreen {
         });
     }
 
-    showMoviePlayer(movie, episode){
+    showMoviePlayer(movie, episode) {
         new PlayerScreen(this.engine, this, movie, episode).show();
     }
 }
@@ -1649,14 +1649,14 @@ class PlayerScreen extends BaseScreen {
         this.playerTitleDiv = document.getElementById("player-title");
         this.backButton = document.getElementById("player-back-button");
 
-        this.backButton.onclick = (e) => {            
+        this.backButton.onclick = (e) => {
             this.back();
         }
 
         this.update();
     }
 
-    update(){
+    update() {
         this.movie.watchingEpisode = this.episode.title;
         this.engine.saveFavoriteMovies();
 
@@ -1669,6 +1669,15 @@ class PlayerScreen extends BaseScreen {
         this.playerIframe.src = '';
     }
 }
+
+// ============================
+// #endregion
+// ============================
+
+
+// ============================
+// #region MAIN
+// ============================
 
 const SUPPORTED_SOURCES = {
     'anime4.site': new Animet(),
@@ -1725,7 +1734,16 @@ if (SUPPORTED_SOURCES[location.host]) {
     }, 1000);
 }
 
-if (["hajaulee.github.io"].includes(location.host)){
+
+// ============================
+// #endregion
+// ============================
+
+// ============================
+// #region CHECK FOR UPDATES
+// ============================
+
+if (["hajaulee.github.io"].includes(location.host)) {
     setTimeout(() => {
         addMainStyle();
         // Add only snackbar to the page
@@ -1743,3 +1761,8 @@ if (["hajaulee.github.io"].includes(location.host)){
         }
     }, 2000);
 }
+
+
+// ============================
+// #endregion
+// ============================
