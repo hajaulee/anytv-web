@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.21
+// @version      1.0.22
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.21";
+const VERSION = "1.0.22";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1746,8 +1746,6 @@ class PlayerScreen extends BaseScreen {
 
 /* Run in all frame script */
 function runCommonScript() {
-    // Disable popup opening
-    window.open = console.log;
 
     // Remove ads
     setIntervalImmediate(() => {
