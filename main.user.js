@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.19
+// @version      1.0.20
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.19";
+const VERSION = "1.0.20";
 
 // ============================
 // #region TEMPLATE HTML
@@ -335,6 +335,7 @@ const STYLES = /* css */ `
     }
     .movie-episode {
         height: 56px;
+        cursor: pointer;
     }
     .movie-episode-title {
         font-size: 16px;
@@ -858,7 +859,7 @@ class Animet extends BaseSource {
         return doc.querySelector(".Image a").getAttribute("href")
     }
 
-    episodeSelector() { return ".list-episode a" }
+    episodeSelector() { return "#list-server > div:nth-child(1) a" }
 
     episodeFromElement(e) {
         return {
@@ -1116,14 +1117,19 @@ class Engine {
     updateMovie(movie) {
         const movieInPool = this.moviePool[movie.title] ?? movie;
         movieInPool.thumbnailRatio = this.source.thumbnailRatio;
-        if (movie.genres && !movieInPool.genres) {
-            movieInPool.genres = movie.genres;
-        }
-        if (movie.episodeList && !movieInPool.episodeList) {
-            movieInPool.episodeList = movie.episodeList;
-        }
-        if (movie.description && !movieInPool.description) {
-            movieInPool.description = movie.description;
+
+        // Copy all properties from movie to movieInPool if they are not already set
+        Object.keys(movie).forEach(key => {
+            if (movie[key] && !movieInPool[key]) {
+                movieInPool[key] = movie[key];
+            }
+        });
+
+        // Update lastEpisode if it is greater than the one in the pool
+        if (movie.latestEpisode && movieInPool.latestEpisode) {
+            if(Number(movieInPool.latestEpisode) > Number(movie.latestEpisode)) {
+                movieInPool.latestEpisode = movie.latestEpisode;
+            }
         }
 
         this.moviePool[movie.title] = movieInPool;
@@ -1713,9 +1719,47 @@ class PlayerScreen extends BaseScreen {
 // #endregion
 // ============================
 
+// ============================
+// #region COMMON SCRIPTS
+// ============================
+
+/* Run in all frame script */
+function runCommonScript() {
+    // Disable popup opening
+    window.open = console.log;
+
+    // Remove ads
+    setIntervalImmediate(() => {
+        while (document.body.nextSibling) {
+            document.body.nextSibling.remove();
+        }
+    }, 1000);
+
+    // Handle video
+    setIntervalImmediate(() => {
+        Array.from(document.getElementsByTagName("video")).forEach((element) => {
+
+            // Check if the video is an advertisement by duration threshold
+            if (element.duration < DURATION_THRESHOLD){
+                if (element.currentTime < element.duration) {
+                    console.log("Skipped an ads!!!!");
+                    element.muted = true;
+                    element.volume = 0;
+                    element.currentTime = element.duration + 1;
+                }
+            }
+        });
+    }, 1000);
+}
 
 // ============================
-// #region MAIN
+// #endregion
+// ============================
+
+
+
+// ============================
+// #region MAIN FRAME
 // ============================
 
 const SUPPORTED_SOURCES = {
@@ -1725,12 +1769,12 @@ const SUPPORTED_SOURCES = {
 
 const DURATION_THRESHOLD = 120; // seconds, under this duration is considered an ad
 
-if (SUPPORTED_SOURCES[location.host]) {
-    // MAIN FRAME
-    if (window.self == window.top) {
-
+// MAIN FRAME
+if (window.self == window.top) {
+    if (SUPPORTED_SOURCES[location.host]) {
         addMainStyle();
         addMainScript();
+        runCommonScript();
 
         var source = SUPPORTED_SOURCES[location.host];
         var engine = new Engine(source);
@@ -1749,69 +1793,74 @@ if (SUPPORTED_SOURCES[location.host]) {
                     engine.saveFavoriteMovies();
                 }
                 console.log(`Video Info: ${currentTime}/${duration} - ${videoUrl}`);
+            } 
+            
+            if (event.data.type === 'checkHost') {
+                event.source.postMessage({
+                    type: 'hostCheckResult',
+                    host: location.host,
+                    version: VERSION,
+                }, event.origin);
             }
         });
 
-    } else {
-        // IFRAME SCRIPT
+    } 
+    
+}
 
-        setIntervalImmediate(() => {
-            // Hide all images
-            const images = document.querySelectorAll("img");
-            images.forEach(image => {
-                image.style.display = "none";
-            });
-        }, 1000);
+// ============================
+// #endregion
+// ============================
 
-        // Handle video
-        setIntervalImmediate(() => {
-            Array.from(document.getElementsByTagName("video")).forEach((element) => {
+// ============================
+// #region OTHER FRAMES
+// ============================
 
-                // Main video
-                if (element.duration > DURATION_THRESHOLD){
-                    
-                    // Stop video when it is finished to prevent auto-play next video
-                    if (element.currentTime > element.duration - 1){
-                        element.pause();
-                    }
+if (window.self != window.top) {
+    // IFRAME
 
-                    // Send current time and duration to parent window
-                    window.parent.postMessage({
-                        type: 'videoInfo',
-                        currentTime: Math.round(element.currentTime),
-                        duration: Math.round(element.duration),
-                        videoUrl: element.src
-                    }, "*");
-                }
-            });
-        }, 1000);
-    }
+    window.top.postMessage({
+        type: 'checkHost',
+    }, "*");
+    
+    window.addEventListener("message", (event) => {
+        if (event.data.type === 'hostCheckResult') {
+            if (SUPPORTED_SOURCES[event.data.host]) {
 
-    /* Run in all frame script */
-
-    // Disable popup opening
-    window.open = console.log;
-
-    // Remove ads
-    setIntervalImmediate(() => {
-        while (document.body.nextSibling) {
-            document.body.nextSibling.remove();
+                runCommonScript();
+                setIntervalImmediate(() => {
+                    // Hide all images to prevent ads
+                    const images = document.querySelectorAll("img");
+                    images.forEach(image => {
+                        image.style.display = "none";
+                    });
+                }, 1000);
+                
+                // Handle video
+                setIntervalImmediate(() => {
+                    Array.from(document.getElementsByTagName("video")).forEach((element) => {
+                
+                        // Main video
+                        if (element.duration > DURATION_THRESHOLD){
+                            
+                            // Stop video when it is finished to prevent auto-play next video
+                            if (element.currentTime > element.duration - 1){
+                                element.pause();
+                            }
+                
+                            // Send current time and duration to parent window
+                            window.top.postMessage({
+                                type: 'videoInfo',
+                                currentTime: Math.round(element.currentTime),
+                                duration: Math.round(element.duration),
+                                videoUrl: element.src
+                            }, "*");
+                        }
+                    });
+                }, 1000);
+            }
         }
-    }, 1000);
-
-    // Handle video
-    setIntervalImmediate(() => {
-        Array.from(document.getElementsByTagName("video")).forEach((element) => {
-
-            // Check if the video is an advertisement by duration threshold
-            if (element.duration < DURATION_THRESHOLD && element.currentTime < element.duration) {
-                console.log("Skipped an ads!!!!");
-                element.muted = true;
-                element.volume = 0;
-                element.currentTime = element.duration + 1;
-            }
-        });
-    }, 1000);
+    });
 }
 
 
