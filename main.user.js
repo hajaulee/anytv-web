@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.20
+// @version      1.0.21
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
 // ==/UserScript==
 
-const VERSION = "1.0.20";
+const VERSION = "1.0.21";
 
 // ============================
 // #region TEMPLATE HTML
@@ -94,9 +94,16 @@ const MAIN_TEMPLATE = /* html */ `
     </div>
 `;
 
+// Template cho danh sách phim đang chờ tải dự liệu
+const MOVIE_LIST_PLACEHOLDER_TEMPLATE = /* html */ `
+    <div class="card-movie-placeholder"><span class="loader"></span></div>
+    <div class="card-movie-placeholder"><span class="loader"></span></div>
+    <div class="card-movie-placeholder"><span class="loader"></span></div>
+`;
+
 // Template cho thẻ phim
 const MOVIE_CARD_TEMPLATE = /* html */ `
-<div class="card-movie" style="width: calc({{thumbnailRatio}} * 25dvh - 48px)">
+<div class="card-movie" style="width: calc({{thumbnailRatio}} * max(25dvh, 192px) - 48px)">
   <img src="{{cardImageUrl}}" alt="{{title}}"/>
   <p class="card-badge">{{watchingEpisode}}{{latestEpisode}}</p>
   <div class="movie-title">{{title}}</div>
@@ -159,7 +166,7 @@ const STYLES = /* css */ `
         overflow-x: auto;
         overflow-y: hidden;
         white-space: nowrap;
-        height: 26dvh;
+        height: max(26dvh, 200px);
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
     }
@@ -173,12 +180,24 @@ const STYLES = /* css */ `
     }
 
     .card-movie {
-        height: 25dvh;
+        height: max(25dvh, 192px);
         display: inline-block;
         position: relative;
         background-color: blue;
         color: white;
         border-radius: 5px;
+    }
+
+    .card-movie-placeholder {
+        height: 145px;
+        display: inline-block;
+        position: relative;
+        width: 117px;
+        margin-right: 1em;
+    }
+
+    .card-movie-placeholder .loader {
+        position: absolute;
     }
 
     .card-movie .card-badge {
@@ -404,7 +423,7 @@ const STYLES = /* css */ `
     .load-more-button {
         font-size: 100px;
         width: 16dvh;
-        height: 25dvh;
+        height: max(25dvh, 192px);
         background: #122332;
         border-radius: 10px !important;
         display: inline-flex;
@@ -1390,6 +1409,8 @@ class MainScreen extends BaseScreen {
             toastMsg("Phiên bản: " + VERSION);
         };
 
+        this.popularMoviesDiv.innerHTML = MOVIE_LIST_PLACEHOLDER_TEMPLATE;
+        this.latestMoviesDiv.innerHTML = MOVIE_LIST_PLACEHOLDER_TEMPLATE;
         this.engine.getFavoriteMovies().then(() => this.updateFavoriteMovies());
         this.engine.getLatestMovies().then(() => this.updateLatestMovies());
         this.engine.getPopularMovies().then(() => this.updatePopularMovies());
