@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.22
+// @version      1.0.23
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        none
+// @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.22";
+const VERSION = "1.0.23";
 
 // ============================
 // #region TEMPLATE HTML
@@ -616,7 +617,7 @@ function addMainScript() {
     // Add the template to the body
     const templateDiv = document.createElement('div');
     templateDiv.innerHTML = MAIN_TEMPLATE;
-    document.body.appendChild(templateDiv.firstElementChild);
+    document.documentElement.appendChild(templateDiv.firstElementChild);
 }
 
 function showLoadingScreen() {
@@ -1749,7 +1750,7 @@ function runCommonScript() {
 
     // Remove ads
     setIntervalImmediate(() => {
-        while (document.body.nextSibling) {
+        while (document.body?.nextSibling) {
             document.body.nextSibling.remove();
         }
     }, 1000);
@@ -1798,8 +1799,12 @@ if (window.self == window.top) {
         var source = SUPPORTED_SOURCES[location.host];
         var engine = new Engine(source);
 
-        const mainScreen = new MainScreen(engine, null);
-        mainScreen.show();
+        // Create main screen container
+        // Wait for DOM to be loaded, because it needs to be in the body
+        document.addEventListener("DOMContentLoaded", () => {
+            const mainScreen = new MainScreen(engine, null);
+            mainScreen.show();
+        });
 
         // Listen for messages from the iframe
         window.addEventListener("message", (event) => {
