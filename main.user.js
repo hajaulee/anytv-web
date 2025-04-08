@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.23
+// @version      1.0.24
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -9,7 +9,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.23";
+const VERSION = "1.0.24";
 
 // ============================
 // #region TEMPLATE HTML
@@ -617,7 +617,11 @@ function addMainScript() {
     // Add the template to the body
     const templateDiv = document.createElement('div');
     templateDiv.innerHTML = MAIN_TEMPLATE;
-    document.documentElement.appendChild(templateDiv.firstElementChild);
+    if (document.body) {
+        document.body.appendChild(templateDiv.firstElementChild);
+    } else {
+        document.documentElement.appendChild(templateDiv.firstElementChild);
+    }
 }
 
 function showLoadingScreen() {
@@ -1750,9 +1754,20 @@ function runCommonScript() {
 
     // Remove ads
     setIntervalImmediate(() => {
-        while (document.body?.nextSibling) {
-            document.body.nextSibling.remove();
+        const afterBodyDoms = [];
+        let nextSibling = document.body?.nextSibling;
+        while (nextSibling) {
+            afterBodyDoms.push(nextSibling);
+            nextSibling = nextSibling.nextSibling;
         }
+        afterBodyDoms.forEach((dom) => {
+            console.log("Remove:", document.body.nextSibling);
+            if (document.body.nextSibling.classList.contains("h-main-container")) {
+                console.log("Skip main container"); 
+            } else {
+                document.body.nextSibling.remove();
+            }
+        });
     }, 1000);
 
     // Handle video
