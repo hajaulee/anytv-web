@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.24
+// @version      1.0.25
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -9,7 +9,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.24";
+const VERSION = "1.0.25";
 
 // ============================
 // #region TEMPLATE HTML
@@ -689,7 +689,7 @@ class Animet extends BaseSource {
 
     name = "Animet";
     thumbnailRatio = 0.75;
-    baseUrl = "https://anime4.site";
+    baseUrl = "https://anime5.site";
 
     // POPULAR MOVIES
     popularMovieUrl(page) {
@@ -897,7 +897,7 @@ class Phimmoi extends BaseSource {
 
     name = "Phimmoi"
     thumbnailRatio = 1.7
-    baseUrl = "https://phimmoichill.best";
+    baseUrl = "https://phimmoichill.boo";
 
     // LATEST MOVIES
     latestMovieUrl(page) {
@@ -1797,10 +1797,13 @@ function runCommonScript() {
 // #region MAIN FRAME
 // ============================
 
-const SUPPORTED_SOURCES = {
-    'anime4.site': new Animet(),
-    'phimmoichill.best': new Phimmoi()
-}
+const SUPPORTED_SOURCES =[
+    new Animet(),
+    new Phimmoi()
+].reduce((acc, source) => {
+    acc[new URL(source.baseUrl).host] = source;
+    return acc;
+}, {});
 
 const DURATION_THRESHOLD = 120; // seconds, under this duration is considered an ad
 
@@ -1908,7 +1911,7 @@ if (window.self != window.top) {
 // ============================
 
 // ============================
-// #region CHECK FOR UPDATES
+// #region HOME PAGE
 // ============================
 
 if (["hajaulee.github.io"].includes(location.host)) {
