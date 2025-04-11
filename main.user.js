@@ -1,15 +1,16 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.25
+// @version      1.0.26
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.25";
+const VERSION = "1.0.26";
 
 // ============================
 // #region TEMPLATE HTML
@@ -24,7 +25,13 @@ const MAIN_TEMPLATE = /* html */ `
                 <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
                 <span style="flex: 1 1 auto"></span>
                 <button id="open-search-button" class="icon-button">🔍</button>
-                <button id="open-menu-button"class="icon-button">⋮</button>
+                <div class="menu-container">
+                    <button id="open-menu-button"class="icon-button">⋮</button>
+                    <div class="menu" id="main-menu">
+                        <button id="open-setting-btn" class="menu-item">Cài đặt</button>
+                        <button id="show-version-btn" class="menu-item">Phiên bản</button>
+                    </div>
+                </div>
             </div>
             <div class="content-container">
                 <h2 class="category-header">Yêu thích</h2>
@@ -47,6 +54,17 @@ const MAIN_TEMPLATE = /* html */ `
                 <div id="search-filters-container" class="search-filters-container"></div>
                 <h2 class="category-header">Kết quả tìm kiếm</h2>
                 <div id="search-movies" class="movie-list"></div>
+            </div>
+        </div>
+
+        <!-- Màn hình cài đặt -->
+        <div id="setting-screen" style="display: none">
+            <div class="header">
+                <button id="setting-back-button" class="icon-button" >〈</button>
+                <span style="flex: 1 1 auto"></span>
+                <button id="save-setting-button" class="icon-button">💾</button>
+            </div>
+            <div class="content-container">
             </div>
         </div>
 
@@ -232,6 +250,69 @@ const STYLES = /* css */ `
         font-size: 12px;
     }
 
+    .menu-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .menu {
+        display: none;
+        position: absolute;
+        background-color: #323243;
+        min-width: 160px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        border-radius: 5px;
+        top: 25px;
+        right: 25px;
+    }
+
+    .menu-item {
+        color: white;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        text-align: left;
+        width: 100%;
+        background: transparent;
+        padding: 5px 14px;
+        margin: 0;
+        font-size: 18px;
+        border: 0;
+    }
+
+    .menu-item:hover {
+        background-color: #575757;
+    }
+
+    .setting-field input[type="checkbox"] {
+        display: inline-block;
+        width: 2.5em;
+        height: 1.5em;
+    }
+
+    .setting-field label {
+        display: inline-block;
+        margin-left: 5px;
+        font-size: 14px;
+        color: white;
+        padding-top: .625rem;
+        padding-bottom: .625rem;
+    }
+
+    .setting-field input {
+        width: 100%;
+        padding: 5px;
+        margin: 5px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        color: #333;
+        height: 2.5em;
+        outline: none;
+     }
+
+
     .input-search {
         background: transparent;
         padding: 0;
@@ -285,7 +366,7 @@ const STYLES = /* css */ `
 
     .header {
         height: 36px;
-        overflow: hidden;
+        overflow: visible;
         display: flex;
         align-items: center;
         padding: 0 10px;
@@ -630,6 +711,66 @@ function showLoadingScreen() {
 
 function hideLoadingScreen() {
     document.getElementById("loading-screen").style.display = 'none';
+}
+
+async function loadDataFromSharedStorage(key, defaultValue) {
+    return new Promise((resolve, reject) => {
+        try {
+            const value = GM_getValue(key, defaultValue);
+            if (window.anytvSetting){
+                const setting = window.anytvSetting;
+                if (setting.enableSync.value){
+                    const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
+                    fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Network response was not ok');
+                        }
+                    }).then(data => {
+                        resolve(data ?? value ?? defaultValue);
+                    })
+                }
+            } else{
+                resolve(value ?? defaultValue);
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+async function saveDataToSharedStorage(key, value) {
+    return new Promise((resolve, reject) => {
+        try {
+            GM_setValue(key, value);
+            if (window.anytvSetting){
+                const setting = window.anytvSetting;
+                if (setting.enableSync.value){
+                    const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
+                    fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(value)
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                    })
+                }
+            }
+            resolve(true);
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
 // ============================
@@ -1328,7 +1469,7 @@ class Engine {
 
     async getFavoriteMovies() {
         if (!this.favoriteMovies.length) {
-            const favoriteMoviesData = localStorage.getItem('FAVORITE_MOVIES') ?? '[]';
+            const favoriteMoviesData = await loadDataFromSharedStorage( this.source.name + ':FAVORITE_MOVIES', '[]');
             this.favoriteMovies = JSON.parse(favoriteMoviesData)
                 .map(movie => ({ ...movie, detailLoaded: false }))
                 .map(movie => this.updateMovie(movie));
@@ -1337,7 +1478,7 @@ class Engine {
     }
 
     async saveFavoriteMovies() {
-        localStorage.setItem('FAVORITE_MOVIES', JSON.stringify(this.favoriteMovies));
+        await saveDataToSharedStorage(this.source.name + ':FAVORITE_MOVIES', JSON.stringify(this.favoriteMovies));
         return this.favoriteMovies;
     }
 
@@ -1406,13 +1547,32 @@ class MainScreen extends BaseScreen {
         this.popularMoviesDiv = document.getElementById("popular-movies");
         this.searchButton = document.getElementById("open-search-button");
         this.menuButton = document.getElementById("open-menu-button");
+        this.mainMenu = document.getElementById("main-menu");
+        this.openSettingButton = document.getElementById("open-setting-btn");
+        this.showVersionButton = document.getElementById("show-version-btn");
 
         this.searchButton.onclick = (e) => {
             this.gotoSearchSreen();
         };
         this.menuButton.onclick = (e) => {
+            this.mainMenu.style.display = this.mainMenu.style.display == 'block' ? 'none' : 'block';
+        };
+
+        this.openSettingButton.onclick = (e) => {
+            this.mainMenu.style.display = 'none';
+            this.gotoSettingSreen();
+        };
+
+        this.showVersionButton.onclick = (e) => {
+            this.mainMenu.style.display = 'none';
             toastMsg("Phiên bản: " + VERSION);
         };
+
+        document.addEventListener('click', (e) => {
+            if (this.mainMenu.style.display == 'block' && e.target.closest(".menu-container") == null) {
+                this.mainMenu.style.display = 'none';
+            }
+        });
 
         this.popularMoviesDiv.innerHTML = MOVIE_LIST_PLACEHOLDER_TEMPLATE;
         this.latestMoviesDiv.innerHTML = MOVIE_LIST_PLACEHOLDER_TEMPLATE;
@@ -1431,6 +1591,12 @@ class MainScreen extends BaseScreen {
         this.hide();
         const searchScreen = new SearchScreen(this.engine, this);
         searchScreen.show();
+    }
+
+    gotoSettingSreen() {
+        this.hide();
+        const settingScreen = new SettingScreen(this.engine, this);
+        settingScreen.show();
     }
 
     gotoDetailScreen(movie) {
@@ -1480,6 +1646,81 @@ class MainScreen extends BaseScreen {
         });
     }
 
+}
+
+class SettingScreen extends BaseScreen {
+
+    init() {
+        this.screenContent = document.getElementById("setting-screen");
+        this.backButton = document.getElementById("setting-back-button");
+        this.saveSettingButton = document.getElementById("save-setting-button");
+        this.settingContentDiv = this.screenContent.querySelector(".content-container");
+
+        this.backButton.onclick = (e) => this.back();
+
+        this.saveSettingButton.onclick = (e) => this.saveSetting();
+
+        this.defaultSetting = {
+            enableSync: {
+                label: "Bật đồng bộ",
+                value: false,
+                type: "checkbox",
+            },
+            syncKey: {
+                label: "Khóa đồng bộ",
+                value: "",
+                type: "text",
+            },
+            syncUrl: {
+                label: "URL đồng bộ",
+                value: "https://example.com",
+                type: "text",
+            }
+        }
+        this.setting = JSON.parse(JSON.stringify(this.defaultSetting));
+        
+        
+        loadDataFromSharedStorage(':SETTING', JSON.stringify(this.defaultSetting)).then((setting) => {
+            setting = JSON.parse(setting);
+            this.setting = setting;
+            window.anytvSetting = setting;
+            this.initSettingUI(setting);
+        });
+    }
+
+    initSettingUI(setting) {
+        this.settingContentDiv.innerHTML = '';
+        Object.keys(setting).forEach(key => {
+            const value = setting[key];
+            const settingField = createDom(
+                `<div class="setting-field">
+                <label for="setting-field-${key}">${value.label}</label>
+                <input id="setting-field-${key}" type="${value.type}" value="${value.value}"/>
+                </div>`
+            );
+            const input = settingField.querySelector('#setting-field-' + key);
+            if (value.type == 'checkbox') {
+                input.checked = value.value;
+            }
+            this.settingContentDiv.appendChild(settingField);
+        });
+    }
+
+    saveSetting() {
+        const setting = this.setting;
+        Object.keys(setting).forEach(key => {
+            const value = setting[key];
+            const input = document.getElementById("setting-field-" + key);
+            if (value.type == 'checkbox') {
+                value.value = input.checked;
+            } else {
+                value.value = input.value;
+            }
+        });
+        saveDataToSharedStorage(':SETTING', JSON.stringify(setting));
+        window.anytvSetting = setting;
+        toastMsg("Đã lưu cài đặt.");
+    }
 }
 
 class SearchScreen extends BaseScreen {
@@ -1813,6 +2054,13 @@ if (window.self == window.top) {
         addMainStyle();
         addMainScript();
         runCommonScript();
+
+        loadDataFromSharedStorage(':SETTING', undefined).then((setting) => {
+            if (setting){
+                setting = JSON.parse(setting);
+                window.anytvSetting = setting;
+            }
+        });
 
         var source = SUPPORTED_SOURCES[location.host];
         var engine = new Engine(source);
