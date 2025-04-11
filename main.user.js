@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.26
+// @version      1.0.27
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
-// @grant        GM_getValue
-// @grant        GM_setValue
+// @grant        GM.getValue
+// @grant        GM.setValue
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.26";
+const VERSION = "1.0.27";
 
 // ============================
 // #region TEMPLATE HTML
@@ -714,9 +714,9 @@ function hideLoadingScreen() {
 }
 
 async function loadDataFromSharedStorage(key, defaultValue) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
-            const value = GM_getValue(key, defaultValue);
+            const value = await GM.getValue(key, defaultValue);
             if (window.anytvSetting){
                 const setting = window.anytvSetting;
                 if (setting.enableSync.value){
@@ -735,6 +735,8 @@ async function loadDataFromSharedStorage(key, defaultValue) {
                     }).then(data => {
                         resolve(data ?? value ?? defaultValue);
                     })
+                } else{
+                    resolve(value ?? defaultValue);
                 }
             } else{
                 resolve(value ?? defaultValue);
@@ -748,7 +750,7 @@ async function loadDataFromSharedStorage(key, defaultValue) {
 async function saveDataToSharedStorage(key, value) {
     return new Promise((resolve, reject) => {
         try {
-            GM_setValue(key, value);
+            GM.setValue(key, value);
             if (window.anytvSetting){
                 const setting = window.anytvSetting;
                 if (setting.enableSync.value){
