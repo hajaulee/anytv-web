@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.28
+// @version      1.0.29
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -10,7 +10,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.28";
+const VERSION = "1.0.29";
 
 // ============================
 // #region TEMPLATE HTML
@@ -747,12 +747,26 @@ async function loadDataFromSharedStorage(key, defaultValue) {
     });
 }
 
-async function saveDataToSharedStorage(key, value) {
+async function saveDataToSharedStorage(key, value, skipCheckFrequency) {
     return new Promise((resolve, reject) => {
         try {
             GM.setValue(key, value);
             if (window.anytvSetting){
                 const setting = window.anytvSetting;
+                if (!skipCheckFrequency){
+                    if (
+                        window.latestSyncTime &&
+                        window.latestSyncTime > new Date().getTime() - 60000
+                    ) {
+                        console.log("Sync running frequency too high.");
+                        window.skippedSyncData = {
+                        ...window.skippedSyncData,
+                            [key]: value,
+                        }
+                        console.log(window.skippedSyncData)
+                        return;
+                    }
+                }
                 if (setting.enableSync.value){
                     const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
                     fetch(url, {
@@ -765,6 +779,10 @@ async function saveDataToSharedStorage(key, value) {
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
                         }
+                        window.latestSyncTime = new Date().getTime();
+                        if (window.skippedSyncData){
+                            window.skippedSyncData[key] = null;
+                        }
                     })
                 }
             }
@@ -773,6 +791,26 @@ async function saveDataToSharedStorage(key, value) {
             reject(error);
         }
     });
+}
+
+function syncDataSyncOnClose(){
+    const setting = window.anytvSetting;
+    if (setting?.enableSync?.value && window.skippedSyncData){
+        Object.keys(window.skippedSyncData).forEach(key => {
+            const value = window.skippedSyncData[key];
+            if (value) {
+                const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
+                fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        keepalive: true, 
+                        body: JSON.stringify(value)
+                    }).then();
+            }
+        })
+    }
 }
 
 // ============================
@@ -934,7 +972,7 @@ class Animet extends BaseSource {
                         { value: "josei", label: "Josei" },
                         { value: "khoa-hoc", label: "Khoa Học" },
                         { value: "kids", label: "Kids" },
-                        { value: "kiem-hiep", label: "KiếmHiệp" },
+                        { value: "kiem-hiep", label: "Kiếm Hiệp" },
                         { value: "kinh-di", label: "Kinh Dị" },
                         { value: "lang-man", label: "Lãng mạn" },
                         { value: "lich-su", label: "Lịch Sử" },
@@ -947,7 +985,7 @@ class Animet extends BaseSource {
                         { value: "ona", label: "ONA" },
                         { value: "parody", label: "Parody" },
                         { value: "phep-thuat", label: "Phép Thuật" },
-                        { value: "phieu-luu", label: "PhiêuLưu" },
+                        { value: "phieu-luu", label: "Phiêu Lưu" },
                         { value: "police", label: "Police" },
                         { value: "quan-doi", label: "Quân Đội" },
                         { value: "samurai", label: "Samurai" },
@@ -962,13 +1000,13 @@ class Animet extends BaseSource {
                         { value: "tam-ly", label: "Tâm Lý" },
                         { value: "than-thoai", label: "Thần Thoại" },
                         { value: "the-gioi-song-song", label: "Thế Giới Song Song" },
-                        { value: "the-thao", label: "ThểThao" },
+                        { value: "the-thao", label: "Thể Thao" },
                         { value: "thriller", label: "Thriller" },
                         { value: "tien-hiep", label: "Tiên Hiệp" },
-                        { value: "tieu-thuyet", label: "TiểuThuyết" },
+                        { value: "tieu-thuyet", label: "Tiểu Thuyết" },
                         { value: "tinh-cam", label: "Tình Cảm" },
                         { value: "tinh-tay-ba", label: "Tình Tay Ba" },
-                        { value: "tinh-yeu", label: "TìnhYêu" },
+                        { value: "tinh-yeu", label: "Tình Yêu" },
                         { value: "tokusatsu", label: "Tokusatsu" },
                         { value: "tragedy", label: "Tragedy" },
                         { value: "trailer", label: "Trailer" },
@@ -1471,8 +1509,11 @@ class Engine {
 
     async getFavoriteMovies() {
         if (!this.favoriteMovies.length) {
-            const favoriteMoviesData = await loadDataFromSharedStorage( this.source.name + ':FAVORITE_MOVIES', '[]');
-            this.favoriteMovies = JSON.parse(favoriteMoviesData)
+            let favoriteMoviesData = await loadDataFromSharedStorage( this.source.name + ':FAVORITE_MOVIES', []);
+            if (typeof(favoriteMoviesData) == 'string'){
+                favoriteMoviesData = JSON.parse(favoriteMoviesData);
+            }
+            this.favoriteMovies = favoriteMoviesData
                 .map(movie => ({ ...movie, detailLoaded: false }))
                 .map(movie => this.updateMovie(movie));
         }
@@ -1480,7 +1521,7 @@ class Engine {
     }
 
     async saveFavoriteMovies() {
-        await saveDataToSharedStorage(this.source.name + ':FAVORITE_MOVIES', JSON.stringify(this.favoriteMovies));
+        await saveDataToSharedStorage(this.source.name + ':FAVORITE_MOVIES', this.favoriteMovies);
         return this.favoriteMovies;
     }
 
@@ -1682,8 +1723,10 @@ class SettingScreen extends BaseScreen {
         this.setting = JSON.parse(JSON.stringify(this.defaultSetting));
         
         
-        loadDataFromSharedStorage(':SETTING', JSON.stringify(this.defaultSetting)).then((setting) => {
-            setting = JSON.parse(setting);
+        loadDataFromSharedStorage(':SETTING', this.defaultSetting).then((setting) => {
+            if (typeof(setting) == 'string'){
+                setting = JSON.parse(setting);
+            }
             this.setting = setting;
             window.anytvSetting = setting;
             this.initSettingUI(setting);
@@ -1719,7 +1762,7 @@ class SettingScreen extends BaseScreen {
                 value.value = input.value;
             }
         });
-        saveDataToSharedStorage(':SETTING', JSON.stringify(setting));
+        saveDataToSharedStorage(':SETTING', setting);
         window.anytvSetting = setting;
         toastMsg("Đã lưu cài đặt.");
     }
@@ -2059,7 +2102,9 @@ if (window.self == window.top) {
 
         loadDataFromSharedStorage(':SETTING', undefined).then((setting) => {
             if (setting){
-                setting = JSON.parse(setting);
+                if (typeof(setting) == 'string'){
+                    setting = JSON.parse(setting);
+                }
                 window.anytvSetting = setting;
             }
         });
@@ -2094,6 +2139,11 @@ if (window.self == window.top) {
                     version: VERSION,
                 }, event.origin);
             }
+        });
+        
+        // Sync before existing
+        window.addEventListener("beforeunload", (e) => {
+            syncDataSyncOnClose();
         });
 
     } 
