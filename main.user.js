@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.27
+// @version      1.0.28
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -10,7 +10,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.27";
+const VERSION = "1.0.28";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1294,7 +1294,7 @@ class Engine {
 
         // Update lastEpisode if it is greater than the one in the pool
         if (movie.latestEpisode && movieInPool.latestEpisode) {
-            if(Number(movieInPool.latestEpisode) > Number(movie.latestEpisode)) {
+            if(Number(movieInPool.latestEpisode) < Number(movie.latestEpisode)) {
                 movieInPool.latestEpisode = movie.latestEpisode;
             }
         }
