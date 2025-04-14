@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.29
+// @version      1.0.30
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -10,7 +10,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.29";
+const VERSION = "1.0.30";
 
 // ============================
 // #region TEMPLATE HTML
@@ -2215,22 +2215,28 @@ if (window.self != window.top) {
 // ============================
 
 if (["hajaulee.github.io"].includes(location.host)) {
-    setTimeout(() => {
-        addMainStyle();
-        // Add only snackbar to the page
-        document.body.appendChild(createDom("<div id='snackbar'></div>"));
+    fetch("main.user.js")
+            .then(response => response.text())
+            .then(data => {
+                const latestVersion = data.match(/VERSION.*".*"/)[0].slice(11, -1);
+                window.ANYTVWEB_LATEST_VERSION = latestVersion;
+                addMainStyle();
+                // Add only snackbar to the page
+                document.body.appendChild(createDom("<div id='snackbar'></div>"));
 
-        if (window.ANYTVWEB_LATEST_VERSION) {
-            const parsedVersion = VERSION.split('.').map(Number);
-            const latestVersion = window.ANYTVWEB_LATEST_VERSION.split('.').map(Number);
-            const isNewerVersion = latestVersion.some((num, index) => num > (parsedVersion[index] || 0));
-            if (isNewerVersion) {
-                toastMsg("Có phiên bản mới: " + window.ANYTVWEB_LATEST_VERSION);
-            } else {
-                console.log("Phiên bản mới nhất: " + VERSION);
-            }
-        }
-    }, 2000);
+                if (window.ANYTVWEB_LATEST_VERSION) {
+                    const parsedVersion = VERSION.split('.').map(Number);
+                    const latestVersion = window.ANYTVWEB_LATEST_VERSION.split('.').map(Number);
+                    const isNewerVersion = latestVersion.some((num, index) => num > (parsedVersion[index] || 0));
+                    if (isNewerVersion) {
+                        toastMsg("Có phiên bản mới: " + window.ANYTVWEB_LATEST_VERSION);
+                    } else {
+                        console.log("Phiên bản mới nhất: " + VERSION);
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching the script:', error));
+        
 }
 
 
