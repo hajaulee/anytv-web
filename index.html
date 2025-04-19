@@ -39,16 +39,19 @@
         .link-button:hover {
             transform: scale(1.05); /* Slight zoom effect on hover */
         }
+        .link-button:focus {
+            transform: scale(1.1); /* Slight zoom effect on hover */
+        }
         .link-button.animet {
             background: linear-gradient(45deg, #e50914, #f5555d); /* Gradient for Animet */
         }
-        .link-button.animet:hover {
+        .link-button.animet:hover, .animet:focus {
             background: linear-gradient(45deg, #f40612, #e50914); /* Reverse gradient on hover */
         }
         .link-button.phimmoi {
             background: linear-gradient(45deg, #1e90ff, #201cee); /* Gradient for Phimmoi */
         }
-        .link-button.phimmoi:hover {
+        .link-button.phimmoi:hover, .phimmoi:focus {
             background: linear-gradient(45deg, #1c86ee, #1e90ff); /* Reverse gradient on hover */
         }
         .footer {
@@ -70,7 +73,7 @@
 </head>
 <body>
     <div class="button-container">
-        <a href="https://anime4.site" class="link-button animet">Animet</a>
+        <a href="https://anime5.site" class="link-button animet">Animet</a>
         <a href="https://phimmoichill.best" class="link-button phimmoi">Phimmoi</a>
     </div>
     <footer class="footer">

@@ -1,16 +1,17 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.30
+// @version      1.0.31
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
 // @grant        GM.getValue
 // @grant        GM.setValue
+// @inject-into  content
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.30";
+const VERSION = "1.0.31";
 
 // ============================
 // #region TEMPLATE HTML
