@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.31
+// @version      1.0.32
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.31";
+const VERSION = "1.0.32";
 
 // ============================
 // #region TEMPLATE HTML
@@ -37,10 +37,10 @@ const MAIN_TEMPLATE = /* html */ `
             <div class="content-container">
                 <h2 class="category-header">Yêu thích</h2>
                 <div id="favorite-movies" class="movie-list"></div>
-                <h2 class="category-header">Phổ biến</h2>
-                <div id="popular-movies" class="movie-list"></div>
                 <h2 class="category-header">Mới cập nhật</h2>
                 <div id="latest-movies" class="movie-list"></div>
+                <h2 class="category-header">Phổ biến</h2>
+                <div id="popular-movies" class="movie-list"></div>
             </div>
         </div>
 
@@ -315,6 +315,7 @@ const STYLES = /* css */ `
 
 
     .input-search {
+        color: white;
         background: transparent;
         padding: 0;
         margin: 0;
@@ -428,6 +429,7 @@ const STYLES = /* css */ `
         margin: 0;
         line-height: 0;
         font-size: 14px;
+        color: white;
     }
 
     .episode-list {
@@ -501,6 +503,7 @@ const STYLES = /* css */ `
         padding: 0;
         margin: 0;
         border: 0;
+        color: white;
     }
 
     .load-more-button {
@@ -514,6 +517,7 @@ const STYLES = /* css */ `
         align-items: center;
         vertical-align: top;
         border: 0;
+        color: white;
     }
 
     #snackbar {
@@ -814,6 +818,20 @@ function syncDataSyncOnClose(){
     }
 }
 
+function httpGetSync(url) {
+    // Get data from the URL synchronously
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, false); // false makes the request synchronous
+
+    xhr.send(null);
+    if (xhr.status === 200) {
+        return xhr.responseText;
+    } else {
+        console.error("Error fetching data:", xhr.statusText);
+        return null;
+    }
+}
+
 // ============================
 // #endregion
 // ============================
@@ -827,6 +845,7 @@ class BaseSource {
 
     name = "Base";
     thumbnailRatio = 0.75;
+    needBypassIframe = false;
     baseUrl = "https://abc.xyz";
 
     // POPULAR MOVIES
@@ -1255,6 +1274,96 @@ class Phimmoi extends BaseSource {
     }
 }
 
+/* WIP */
+class Rophim extends BaseSource {
+
+    name = "Rpphim";
+    thumbnailRatio = 0.764;
+    needBypassIframe = true;
+    baseUrl = "https://www.rophim.me";
+    cardImageRoot = 'https://static.nutscdn.com/vimg/300-0/';
+    bgImageRoot = 'https://static.nutscdn.com/vimg/1920-0/';
+
+    // POPULAR MOVIES
+    popularMovieUrl(page) { 
+        const currentYear = new Date().getFullYear();
+        return `https://api.rophim.me/v1/movie/filterV2?years=${currentYear},${currentYear - 1}&sort=total_views&page=${page}` 
+    }
+    popularMoviesParse(doc) { return this.latestMoviesParse(doc) }
+    popularMovieSelector() { return null }
+    popularMovieFromElement(e) { return null }
+
+    // LATEST MOVIES
+    latestMovieUrl(page) {
+        const currentYear = new Date().getFullYear();
+        return `https://api.rophim.me/v1/movie/filterV2?years=${currentYear},${currentYear - 1}&type=2&sort=updated_at&page=${page}` 
+    }
+    latestMoviesParse(doc) {
+        const jsonData = doc.querySelector("body").textContent;
+        const data = JSON.parse(jsonData);
+        if (data.result.items){
+            return data.result.items.map(it => {
+                
+                return {
+                    title: it.title,
+                    movieUrl: `${this.baseUrl}/phim/${it.slug}.${it._id}`,
+                    cardImageUrl: this.cardImageRoot + it.images.posters[0].path.split("/").slice(-1)[0],
+                    backgroundImageUrl: this.bgImageRoot + it.images.backdrops[0].path.split("/").slice(-1)[0],
+                    latestEpisode: it.type == 2 ? it.latest_episode[1] : null,
+                    description: it.overview,
+                    genres: it.genres.map(ge => ge.name).join(", "),
+                }
+            });
+        }
+        return [] 
+    }
+    latestMovieSelector() { return null }
+    latestMovieFromElement(element) { return null }
+
+    // SEARCH MOVIES
+    filterConfig() { return null }
+    searchMovieUrl(keyword, filters, page) { 
+        return `https://api.rophim.me/v1/movie/filterV2?sort=updated_at&page=${page}&keyword=${keyword}` 
+    }
+    searchMoviesParse(doc) { return this.latestMoviesParse(doc) }
+    searchMovieSelector() { return null }
+    searchMovieFromElement(e) { return null }
+
+
+    // MOVIE DETAIL
+    movieDetailParse(doc) { return {} }
+    relatedMoviesParse(doc) { return null }
+
+    // EPISODES
+    firstEpisodeUrl(doc) { return null }
+    episodesParse(doc) {
+        const moviePath = doc.url.split("/").slice(-1)[0];
+        const movieId = moviePath.split(".").slice(-1)[0];
+        const episodeUrl = `https://api.rophim.me/v1/movie/seasons?mId=${movieId}`;
+        const jsonData = httpGetSync(episodeUrl);
+        const data = JSON.parse(jsonData);
+        const episodes = [];
+        data.result.forEach(season => {
+            season.episodes.forEach(episode => {
+                episodes.push({
+                    title: episode.episode_number,
+                    url: `${this.baseUrl}/xem-phim/moviePath?ep=${episode.episode_number}&ss=${season.season_number}`
+                });
+            });
+        });
+        return episodes
+    }
+    episodeSelector() { return null }
+    episodeFromElement(e) { return null }
+
+    // PLAYER
+    moviePlayerSelector() { return "video" }
+    moviePlayerContainerSelector() { return this.moviePlayerSelector() }
+    onMoviePageLoadedJavascript() { return null }
+
+    movieServerSelector() { return null }
+}
+
 // ============================
 // #endregion
 // ============================
@@ -1274,14 +1383,23 @@ class WebView {
         document.body.appendChild(this.iframe);
     }
 
-    async loadUrl(url) {
+    async loadUrl(url, bypassIframe) {
         console.log("Loading:", url);
-        this.iframe.src = url;
-        return await new Promise((resolve, reject) => {
-            setTimeout(() => {
-                resolve(this.iframe.contentDocument || this.iframe.contentWindow.document);
-            }, 3000);
-        });
+        if (bypassIframe) {
+            return await fetch(url).then(response => response.text()).then(text => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+                doc.url = url;
+                return doc;
+            });
+        } else {
+            this.iframe.src = url;
+            return await new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve(this.iframe.contentDocument || this.iframe.contentWindow.document);
+                }, 3000);
+            });
+        }
 
     }
 
@@ -1375,7 +1493,7 @@ class Engine {
         const promise = new Promise((resolve, reject) => {
             this.currentLatestMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.latestMovieUrl(this.currentLatestMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.latestMovieUrl(this.currentLatestMoviesPage), this.source.needBypassIframe);
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.latestMoviesParse(doc)
                 if (movieList == null) {
@@ -1400,7 +1518,7 @@ class Engine {
         const promise = new Promise((resolve, reject) => {
             this.currentPopularMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.popularMovieUrl(this.currentPopularMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.popularMovieUrl(this.currentPopularMoviesPage), this.source.needBypassIframe);
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.popularMoviesParse(doc)
                 if (movieList == null) {
@@ -1431,7 +1549,7 @@ class Engine {
             }
             this.currentSearchMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, filters, this.currentSearchMoviesPage));
+            const webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, filters, this.currentSearchMoviesPage), this.source.needBypassIframe);
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.searchMoviesParse(doc)
                 if (movieList == null) {
@@ -1454,7 +1572,7 @@ class Engine {
     async getMovieDetail(movie) {
         const promise = new Promise((resolve, reject) => {
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(movie.movieUrl);
+            const webLoadingPromise = webView.loadUrl(movie.movieUrl, this.source.needBypassIframe);
 
             const handleResults = (detailMovie, episodes) => {
                 detailMovie.episodeList = this.updateEpisodeList(detailMovie.episodeList, episodes);
@@ -1476,7 +1594,7 @@ class Engine {
 
                     handleResults(detailMovie, episodes);
                 } else {
-                    const webLoadingPromise1 = webView.loadUrl(firstEpisodeUrl);
+                    const webLoadingPromise1 = webView.loadUrl(firstEpisodeUrl, this.source.needBypassIframe);
                     webLoadingPromise1.then(doc1 => {
                         var episodes = this.getMovieEpisodes(doc1, firstEpisodeUrl, true)
                         handleResults(detailMovie, episodes);
@@ -2086,7 +2204,8 @@ function runCommonScript() {
 
 const SUPPORTED_SOURCES =[
     new Animet(),
-    new Phimmoi()
+    new Phimmoi(),
+    new Rophim(),
 ].reduce((acc, source) => {
     acc[new URL(source.baseUrl).host] = source;
     return acc;
