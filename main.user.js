@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.33
+// @version      1.0.34
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.33";
+const VERSION = "1.0.34";
 
 // ============================
 // #region TEMPLATE HTML
@@ -890,7 +890,7 @@ class Animet extends BaseSource {
 
     name = "Animet";
     thumbnailRatio = 0.75;
-    baseUrl = "https://anime6.site";
+    baseUrl = "https://anime7.site";
 
     // POPULAR MOVIES
     popularMovieUrl(page) {
