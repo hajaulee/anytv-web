@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.35
+// @version      1.0.36
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.35";
+const VERSION = "1.0.36";
 
 // ============================
 // #region TEMPLATE HTML
@@ -2218,7 +2218,8 @@ const DURATION_THRESHOLD = 120; // seconds, under this duration is considered an
 
 // MAIN FRAME
 if (window.self == window.top) {
-    if (SUPPORTED_SOURCES[location.host] || SUPPORTED_SOURCES[sourceFromUrl]) {
+    var source = SUPPORTED_SOURCES[location.host] || SUPPORTED_SOURCES[sourceFromUrl];
+    if (source) {
         addMainStyle();
         addMainScript();
         runCommonScript();
@@ -2232,7 +2233,6 @@ if (window.self == window.top) {
             }
         });
 
-        var source = SUPPORTED_SOURCES[location.host] || SUPPORTED_SOURCES[sourceFromUrl];
         // Update host of source to current host
         const sourceUrl = new URL(source.baseUrl);
         sourceUrl.host = location.host;
@@ -2265,6 +2265,7 @@ if (window.self == window.top) {
                     type: 'hostCheckResult',
                     host: location.host,
                     version: VERSION,
+                    source: source.name,
                 }, event.origin);
             }
         });
@@ -2295,7 +2296,7 @@ if (window.self != window.top) {
     
     window.addEventListener("message", (event) => {
         if (event.data.type === 'hostCheckResult') {
-            if (SUPPORTED_SOURCES[event.data.host]) {
+            if (SUPPORTED_SOURCES[event.data.source]) {
 
                 runCommonScript();
                 setIntervalImmediate(() => {
