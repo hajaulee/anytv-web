@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.34
+// @version      1.0.35
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.34";
+const VERSION = "1.0.35";
 
 // ============================
 // #region TEMPLATE HTML
@@ -2208,14 +2208,17 @@ const SUPPORTED_SOURCES =[
     new Rophim(),
 ].reduce((acc, source) => {
     acc[new URL(source.baseUrl).host] = source;
+    acc[source.name] = source;
     return acc;
 }, {});
+const hashParams = new URLSearchParams(location.hash.substring(1));
+const sourceFromUrl = hashParams.get('source');
 
 const DURATION_THRESHOLD = 120; // seconds, under this duration is considered an ad
 
 // MAIN FRAME
 if (window.self == window.top) {
-    if (SUPPORTED_SOURCES[location.host]) {
+    if (SUPPORTED_SOURCES[location.host] || SUPPORTED_SOURCES[sourceFromUrl]) {
         addMainStyle();
         addMainScript();
         runCommonScript();
@@ -2229,7 +2232,12 @@ if (window.self == window.top) {
             }
         });
 
-        var source = SUPPORTED_SOURCES[location.host];
+        var source = SUPPORTED_SOURCES[location.host] || SUPPORTED_SOURCES[sourceFromUrl];
+        // Update host of source to current host
+        const sourceUrl = new URL(source.baseUrl);
+        sourceUrl.host = location.host;
+        source.baseUrl = sourceUrl.origin;
+
         var engine = new Engine(source);
 
         // Create main screen container
