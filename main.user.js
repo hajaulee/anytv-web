@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.38
+// @version      1.0.39
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.38";
+const VERSION = "1.0.39";
 
 // ============================
 // #region TEMPLATE HTML
@@ -2319,12 +2319,15 @@ if (window.self != window.top) {
                         if (videoContainer) {
                             clearInterval(videoContainerTimer);
                             videoContainer.style.width= "100dvw";
-                            videoContainer.style.height= "calc(100dvh - 30px)";
+                            videoContainer.style.height= "calc(100dvh - 29px)";
                             videoContainer.style.position= "fixed";
                             videoContainer.style.zIndex= 9999;
                             videoContainer.style.left= 0;
-                            videoContainer.style.top= "30px";
+                            videoContainer.style.top= "29px";
                             videoContainer.style.background = "black";
+
+                            document.body.style.height = "50dvh";
+                            document.body.style.overflow = "hidden";
                         }
                     }, 500);
                 }
