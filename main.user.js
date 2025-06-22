@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.37
+// @version      1.0.38
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.37";
+const VERSION = "1.0.38";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1093,7 +1093,7 @@ class Animet extends BaseSource {
         }
     }
 
-    moviePlayerContainerSelector() { return "#media-player-box"; }
+    moviePlayerContainerSelector() { return "#watch-block div"; }
 
     movieServerSelector() { return "#list-server1 .server-item"; }
 }
@@ -2324,6 +2324,7 @@ if (window.self != window.top) {
                             videoContainer.style.zIndex= 9999;
                             videoContainer.style.left= 0;
                             videoContainer.style.top= "30px";
+                            videoContainer.style.background = "black";
                         }
                     }, 500);
                 }
