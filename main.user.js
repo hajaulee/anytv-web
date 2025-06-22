@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.36
+// @version      1.0.37
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.36";
+const VERSION = "1.0.37";
 
 // ============================
 // #region TEMPLATE HTML
@@ -108,7 +108,7 @@ const MAIN_TEMPLATE = /* html */ `
         <div id="loading-screen" class="cover" style="display: none">
             <span class="loader"></span>
         </div>
-        
+
         <!-- Snackbar thông báo -->
         <div id="snackbar">Some text some message..</div>
     </div>
@@ -190,7 +190,7 @@ const STYLES = /* css */ `
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
     }
-      
+
     .movie-list::-webkit-scrollbar {
         display: none; /* Chrome, Safari, and Opera */
     }
@@ -237,7 +237,7 @@ const STYLES = /* css */ `
         width: 100%;
         object-fit: cover;
     }
-    
+
     .movie-title {
         padding: 2px 5px;
         overflow: hidden;
@@ -535,28 +535,28 @@ const STYLES = /* css */ `
         font-size: 17px;
         transform: translateX(-50%);
       }
-      
+
       #snackbar.show {
         visibility: visible;
         -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
         animation: fadein 0.5s, fadeout 0.5s 2.5s;
       }
-      
+
       @-webkit-keyframes fadein {
-        from {bottom: 0; opacity: 0;} 
+        from {bottom: 0; opacity: 0;}
         to {bottom: 30px; opacity: 1;}
       }
-      
+
       @keyframes fadein {
         from {bottom: 0; opacity: 0;}
         to {bottom: 30px; opacity: 1;}
       }
-      
+
       @-webkit-keyframes fadeout {
-        from {bottom: 30px; opacity: 1;} 
+        from {bottom: 30px; opacity: 1;}
         to {bottom: 0; opacity: 0;}
       }
-      
+
       @keyframes fadeout {
         from {bottom: 30px; opacity: 1;}
         to {bottom: 0; opacity: 0;}
@@ -591,7 +591,7 @@ const STYLES = /* css */ `
         border-radius: 0 0 4px 4px;
         box-shadow: 102px 0 #aaa;
       }
-      
+
       .loader:after {
         content: "";
         position: absolute;
@@ -602,7 +602,7 @@ const STYLES = /* css */ `
         margin: auto;
         bottom: 20px;
         background-color: #bbdefb;
-        background-image: 
+        background-image:
           linear-gradient( to right, #0004 0%, #0004 49%, #0000 50%, #0000 100% ),
           linear-gradient(135deg, #64b5f6 50%, #607d8b 51%);
         background-size: 30px 100%, 90px 80px;
@@ -614,7 +614,7 @@ const STYLES = /* css */ `
         box-shadow: 0 0 0 4px #999 inset, 0 0 6px 6px #0004 inset;
         animation: spin 3s ease-in-out infinite;
       }
-      
+
       @keyframes spin {
         0% { transform: rotate(0deg) }
         50% { transform: rotate(360deg) }
@@ -810,7 +810,7 @@ function syncDataSyncOnClose(){
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        keepalive: true, 
+                        keepalive: true,
                         body: JSON.stringify(value)
                     }).then();
             }
@@ -1092,6 +1092,10 @@ class Animet extends BaseSource {
             url: e.getAttribute("href")
         }
     }
+
+    moviePlayerContainerSelector() { return "#media-player-box"; }
+
+    movieServerSelector() { return "#list-server1 .server-item"; }
 }
 
 class Phimmoi extends BaseSource {
@@ -1285,9 +1289,9 @@ class Rophim extends BaseSource {
     bgImageRoot = 'https://static.nutscdn.com/vimg/1920-0/';
 
     // POPULAR MOVIES
-    popularMovieUrl(page) { 
+    popularMovieUrl(page) {
         const currentYear = new Date().getFullYear();
-        return `https://api.rophim.me/v1/movie/filterV2?years=${currentYear},${currentYear - 1}&sort=total_views&page=${page}` 
+        return `https://api.rophim.me/v1/movie/filterV2?years=${currentYear},${currentYear - 1}&sort=total_views&page=${page}`
     }
     popularMoviesParse(doc) { return this.latestMoviesParse(doc) }
     popularMovieSelector() { return null }
@@ -1296,14 +1300,14 @@ class Rophim extends BaseSource {
     // LATEST MOVIES
     latestMovieUrl(page) {
         const currentYear = new Date().getFullYear();
-        return `https://api.rophim.me/v1/movie/filterV2?years=${currentYear},${currentYear - 1}&type=2&sort=updated_at&page=${page}` 
+        return `https://api.rophim.me/v1/movie/filterV2?years=${currentYear},${currentYear - 1}&type=2&sort=updated_at&page=${page}`
     }
     latestMoviesParse(doc) {
         const jsonData = doc.querySelector("body").textContent;
         const data = JSON.parse(jsonData);
         if (data.result.items){
             return data.result.items.map(it => {
-                
+
                 return {
                     title: it.title,
                     movieUrl: `${this.baseUrl}/phim/${it.slug}.${it._id}`,
@@ -1315,15 +1319,15 @@ class Rophim extends BaseSource {
                 }
             });
         }
-        return [] 
+        return []
     }
     latestMovieSelector() { return null }
     latestMovieFromElement(element) { return null }
 
     // SEARCH MOVIES
     filterConfig() { return null }
-    searchMovieUrl(keyword, filters, page) { 
-        return `https://api.rophim.me/v1/movie/filterV2?sort=updated_at&page=${page}&keyword=${keyword}` 
+    searchMovieUrl(keyword, filters, page) {
+        return `https://api.rophim.me/v1/movie/filterV2?sort=updated_at&page=${page}&keyword=${keyword}`
     }
     searchMoviesParse(doc) { return this.latestMoviesParse(doc) }
     searchMovieSelector() { return null }
@@ -1840,8 +1844,8 @@ class SettingScreen extends BaseScreen {
             }
         }
         this.setting = JSON.parse(JSON.stringify(this.defaultSetting));
-        
-        
+
+
         loadDataFromSharedStorage(':SETTING', this.defaultSetting).then((setting) => {
             if (typeof(setting) == 'string'){
                 setting = JSON.parse(setting);
@@ -2168,7 +2172,7 @@ function runCommonScript() {
         afterBodyDoms.forEach((dom) => {
             console.log("Remove:", document.body.nextSibling);
             if (document.body.nextSibling.classList.contains("h-main-container")) {
-                console.log("Skip main container"); 
+                console.log("Skip main container");
             } else {
                 document.body.nextSibling.remove();
             }
@@ -2258,8 +2262,8 @@ if (window.self == window.top) {
                     engine.saveFavoriteMovies();
                 }
                 console.log(`Video Info: ${currentTime}/${duration} - ${videoUrl}`);
-            } 
-            
+            }
+
             if (event.data.type === 'checkHost') {
                 event.source.postMessage({
                     type: 'hostCheckResult',
@@ -2269,14 +2273,14 @@ if (window.self == window.top) {
                 }, event.origin);
             }
         });
-        
+
         // Sync before existing
         window.addEventListener("beforeunload", (e) => {
             syncDataSyncOnClose();
         });
 
-    } 
-    
+    }
+
 }
 
 // ============================
@@ -2293,10 +2297,11 @@ if (window.self != window.top) {
     window.top.postMessage({
         type: 'checkHost',
     }, "*");
-    
+
     window.addEventListener("message", (event) => {
         if (event.data.type === 'hostCheckResult') {
-            if (SUPPORTED_SOURCES[event.data.source]) {
+            let source = SUPPORTED_SOURCES[event.data.source];
+            if (source) {
 
                 runCommonScript();
                 setIntervalImmediate(() => {
@@ -2306,19 +2311,52 @@ if (window.self != window.top) {
                         image.style.display = "none";
                     });
                 }, 1000);
-                
+
+                // Handle video container
+                if (source.moviePlayerContainerSelector()){
+                    var videoContainerTimer = setIntervalImmediate(() => {
+                        let videoContainer = document.querySelector(source.moviePlayerContainerSelector());
+                        if (videoContainer) {
+                            clearInterval(videoContainerTimer);
+                            videoContainer.style.width= "100dvw";
+                            videoContainer.style.height= "calc(100dvh - 30px)";
+                            videoContainer.style.position= "fixed";
+                            videoContainer.style.zIndex= 9999;
+                            videoContainer.style.left= 0;
+                            videoContainer.style.top= "30px";
+                        }
+                    }, 500);
+                }
+
+                // Handle server list
+                if (source.movieServerSelector()) {
+                    var serverListContainerTimer = setIntervalImmediate(() => {
+                        let serverListContainer = document.querySelector(source.movieServerSelector());
+                        if (serverListContainer) {
+                            clearInterval(serverListContainerTimer);
+                            serverListContainer.style.width= "100dvw";
+                            serverListContainer.style.height= "30px";
+                            serverListContainer.style.position= "fixed";
+                            serverListContainer.style.zIndex= 9999;
+                            serverListContainer.style.left = 0;
+                            serverListContainer.style.top = 0;
+                            serverListContainer.style.background = "black";
+                        }
+                    }, 500);
+                }
+
                 // Handle video
                 setIntervalImmediate(() => {
                     Array.from(document.getElementsByTagName("video")).forEach((element) => {
-                
+
                         // Main video
                         if (element.duration > DURATION_THRESHOLD){
-                            
+
                             // Stop video when it is finished to prevent auto-play next video
                             if (element.currentTime > element.duration - 1){
                                 element.pause();
                             }
-                
+
                             // Send current time and duration to parent window
                             window.top.postMessage({
                                 type: 'videoInfo',
@@ -2365,7 +2403,7 @@ if (["hajaulee.github.io"].includes(location.host)) {
                 }
             })
             .catch(error => console.error('Error fetching the script:', error));
-        
+
 }
 
 
