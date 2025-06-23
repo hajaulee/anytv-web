@@ -79,5 +79,29 @@
     <footer class="footer">
         <a href="main.user.js" class="footer-link">main.user.js</a>
     </footer>
+    <script>
+        // Enable arrow down navigation between buttons
+        const buttons = Array.from(document.querySelectorAll('.link-button'));
+        buttons.forEach((btn, idx) => {
+            btn.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const nextIdx = (idx + 1) % buttons.length;
+                    buttons[nextIdx].focus();
+                }
+                if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const prevIdx = (idx - 1 + buttons.length) % buttons.length;
+                    buttons[prevIdx].focus();
+                }
+            });
+
+            btn.addEventListener('click', () => {
+                btn.style.transition = 'background 3s ease-in-out, transform 1s ease';
+                btn.style.transform = 'scale(10)';
+                btn.style.background = 'black';
+            });
+        });
+    </script>
 </body>
 </html>
