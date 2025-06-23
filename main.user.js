@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.39
+// @version      1.0.40
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.39";
+const VERSION = "1.0.40";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1276,6 +1276,10 @@ class Phimmoi extends BaseSource {
     episodeFromElement(e) {
         return { title: "", url: "" }
     }
+
+    moviePlayerContainerSelector() { return "#media-player-box"; }
+
+    movieServerSelector() { return "#pm-server"; }
 }
 
 /* WIP */
@@ -2326,6 +2330,12 @@ if (window.self != window.top) {
                             videoContainer.style.top= "29px";
                             videoContainer.style.background = "black";
 
+                            let parent = videoContainer.parentElement
+                            while (parent && parent != document.body){
+                                parent.style.zIndex= 9999;
+                                parent = parent.parentElement;
+                            }
+
                             document.body.style.height = "50dvh";
                             document.body.style.overflow = "hidden";
                         }
@@ -2338,10 +2348,15 @@ if (window.self != window.top) {
                         let serverListContainer = document.querySelector(source.movieServerSelector());
                         if (serverListContainer) {
                             clearInterval(serverListContainerTimer);
-                            serverListContainer.style.width= "100dvw";
-                            serverListContainer.style.height= "30px";
-                            serverListContainer.style.position= "fixed";
-                            serverListContainer.style.zIndex= 9999;
+                            const box = serverListContainer.getBoundingClientRect();
+                            const scale = 30 / box.height;
+
+                            serverListContainer.style.transform = `scale(${scale})`;
+                            serverListContainer.style.transformOrigin = "top left";
+                            serverListContainer.style.width = Math.max(100, (100 / scale)) + "dvw";
+                            serverListContainer.style.height = box.height + 'px';
+                            serverListContainer.style.position = "fixed";
+                            serverListContainer.style.zIndex = 9999;
                             serverListContainer.style.left = 0;
                             serverListContainer.style.top = 0;
                             serverListContainer.style.background = "black";
