@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.40
+// @version      1.0.41
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.40";
+const VERSION = "1.0.41";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1655,7 +1655,7 @@ class Engine {
     addFavotiteMovie(movie) {
         movie = this.updateMovie(movie);
         if (this.favoriteMovies.every(m => m.title != movie)) {
-            this.favoriteMovies.push(movie);
+            this.favoriteMovies.unshift(movie);
             this.saveFavoriteMovies();
         }
         return movie;
