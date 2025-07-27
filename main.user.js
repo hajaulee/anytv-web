@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.41
+// @version      1.0.42
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.41";
+const VERSION = "1.0.42";
 
 // ============================
 // #region TEMPLATE HTML
@@ -1747,8 +1747,12 @@ class MainScreen extends BaseScreen {
         this.popularMoviesDiv.innerHTML = MOVIE_LIST_PLACEHOLDER_TEMPLATE;
         this.latestMoviesDiv.innerHTML = MOVIE_LIST_PLACEHOLDER_TEMPLATE;
         this.engine.getFavoriteMovies().then(() => this.updateFavoriteMovies());
-        this.engine.getLatestMovies().then(() => this.updateLatestMovies());
         this.engine.getPopularMovies().then(() => this.updatePopularMovies());
+        this.engine.getLatestMovies().then(() => {
+            // Update all movies after loading latest movies to update latestEpisode
+            this.update();
+            this.engine.saveFavoriteMovies();
+        });
     }
 
     update() {
