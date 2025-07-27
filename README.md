@@ -12,10 +12,16 @@ A script to make simple UI for any movie website.
 
 ## Installation
 
+### ・ Browser Extention
+
 1. Install [UserScripts](https://github.com/quoid/userscripts?tab=readme-ov-file#installation)
 2. Access script url at [here](https://hajaulee.github.io/anytv-web/main.uset.js)
 3. Install script by UserScripts
 4. Access Dashboard at [here](https://hajaulee.github.io/anytv-web)
+
+### ・ Android APK
+
+Download APK file from [here](https://github.com/hajaulee/AnyTV/raw/master/app/release/AnyTV-2.0.5-release.apk)
 
 ## Usage
 
