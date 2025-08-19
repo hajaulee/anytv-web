@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.42
+// @version      1.0.43.22
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.42";
+const VERSION = "1.0.43";
 
 // ============================
 // #region TEMPLATE HTML
@@ -179,6 +179,7 @@ const STYLES = /* css */ `
     .category-header {
         color: white;
         font-weight: bold;
+        font-size: 24px;
         margin-top: 5px;
     }
 
@@ -693,21 +694,38 @@ function formatDuration(duration) {
     return `${hours > 0 ? zeroPad(hours, 2) + ':' : ''}${zeroPad(minutes, 2) + ':'}${zeroPad(seconds, 2)}`;
 }
 
-function addMainStyle() {
+async function addMainStyle() {
     // Add the styles to the document
     const styleTag = document.createElement('style');
     styleTag.textContent = STYLES;
-    document.head.appendChild(styleTag);
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+            if (document.head) {
+                clearInterval(interval);
+                document.head.appendChild(styleTag);
+                resolve(true);
+            }
+        }, 100);
+    });
 }
-function addMainScript() {
+function addMainTemplate() {
     // Add the template to the body
-    const templateDiv = document.createElement('div');
-    templateDiv.innerHTML = MAIN_TEMPLATE;
-    if (document.body) {
-        document.body.appendChild(templateDiv.firstElementChild);
-    } else {
-        document.documentElement.appendChild(templateDiv.firstElementChild);
-    }
+    setIntervalImmediate(() => {
+        if (!document.querySelector('.h-main-container')) {
+            const templateDiv = document.createElement('div');
+            templateDiv.innerHTML = MAIN_TEMPLATE;
+            if (document.body) {
+                document.body.appendChild(templateDiv.firstElementChild);
+            } else if (document.documentElement) {
+                document.documentElement.appendChild(templateDiv.firstElementChild);
+            }
+
+            if (document.querySelector('.h-main-container')){
+                // Emit event to notify that the main template is loaded
+                document.dispatchEvent(new Event("MainTemplateLoaded"));
+            }
+        }
+    }, 1000);
 }
 
 function showLoadingScreen() {
@@ -849,12 +867,14 @@ class BaseSource {
     baseUrl = "https://abc.xyz";
 
     // POPULAR MOVIES
+    popularMovieRequest(page) { return null }
     popularMovieUrl(page) { return null }
     popularMoviesParse(doc) { return null }
     popularMovieSelector() { return null }
     popularMovieFromElement(e) { return null }
 
     // LATEST MOVIES
+    latestMovieRequest(page) { return null }
     latestMovieUrl(page) { return null }
     latestMoviesParse(doc) { return null }
     latestMovieSelector() { return null }
@@ -862,6 +882,7 @@ class BaseSource {
 
     // SEARCH MOVIES
     filterConfig() { return null }
+    searchMovieRequest(keyword, filters, page) { return null }
     searchMovieUrl(keyword, filters, page) { return null }
     searchMoviesParse(doc) { return null }
     searchMovieSelector() { return null }
@@ -1372,6 +1393,118 @@ class Rophim extends BaseSource {
     movieServerSelector() { return null }
 }
 
+class Shin404 extends BaseSource {
+
+    name = "Shin404";
+    thumbnailRatio = 1.33;
+    baseUrl = "https://www.shin404.com/";
+
+    // POPULAR MOVIES
+    popularMovieRequest(page) { 
+        return fetch(`${this.baseUrl}/home?category=movie`, {
+            "headers": {
+                "accept": "text/x-component",
+                "accept-language": "vi,en-GB;q=0.9,en;q=0.8,en-US;q=0.7,zh-CN;q=0.6,zh;q=0.5",
+                "content-type": "text/plain;charset=UTF-8",
+                "next-action": "7f6b6541a305f0eea74437e1b74b9c07432e0dffa0",
+                "priority": "u=1, i",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin"
+            },
+            "referrer": `${this.baseUrl}/home?category=movie`,
+            "body": `[{\"limit\":20,\"page\":${page}, \"category\":\"movie\"}]`,
+            "method": "POST",
+            "mode": "cors",
+            "credentials": "include"
+            }).then(res => res.text())
+     }
+    popularMovieUrl(page) { return null }
+    popularMoviesParse(doc) { 
+        const data = JSON.parse(doc.trim().split("\n")[1].slice(2));
+        return data?.data?.items?.map(item => ({
+            title: item.title,
+            movieUrl: `${this.baseUrl}/home/watch/${item._id}`,
+            cardImageUrl: `https://assets.shin404.com/thumbnails/${item.detail.thumbnailCdnId}`,
+            backgroundImageUrl: `https://assets.shin404.com/thumbnails/${item.detail.thumbnailCdnId}`,
+            latestEpisode: null,
+            description: "",
+            genres: [""],
+        })) ?? []; 
+    }
+    popularMovieSelector() { return null }
+    popularMovieFromElement(e) { return null }
+
+    // LATEST MOVIES
+    latestMovieRequest(page) { 
+        return fetch(`${this.baseUrl}/home?category=newest`, {
+            "headers": {
+                "accept": "text/x-component",
+                "accept-language": "vi,en-GB;q=0.9,en;q=0.8,en-US;q=0.7,zh-CN;q=0.6,zh;q=0.5",
+                "content-type": "text/plain;charset=UTF-8",
+                "next-action": "7f6b6541a305f0eea74437e1b74b9c07432e0dffa0",
+                "priority": "u=1, i",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin"
+            },
+            "referrer": `${this.baseUrl}/home?category=newest`,
+            "body": `[{\"limit\":20,\"page\":${page}}]`,
+            "method": "POST",
+            "mode": "cors",
+            "credentials": "include"
+            }).then(res => res.text())
+     }
+    latestMovieUrl(page) { return null }
+    latestMoviesParse(doc) { return this.popularMoviesParse(doc) }
+    latestMovieSelector() { return null }
+    latestMovieFromElement(element) { return null }
+
+    // SEARCH MOVIES
+    filterConfig() { return null }
+    searchMovieRequest(keyword, filters, page) { 
+        return fetch(`${this.baseUrl}/home/home?title=${keyword?.replace(/ /g, '+')}`, {
+            "headers": {
+                "accept": "text/x-component",
+                "accept-language": "vi,en-GB;q=0.9,en;q=0.8,en-US;q=0.7,zh-CN;q=0.6,zh;q=0.5",
+                "content-type": "text/plain;charset=UTF-8",
+                "next-action": "7f6b6541a305f0eea74437e1b74b9c07432e0dffa0",
+                "priority": "u=1, i",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin"
+            },
+            "referrer": `${this.baseUrl}/home?category=newest`,
+            "body": `[{\"limit\": ${5 * page},\"title\": \"${keyword}\"}]`,
+            "method": "POST",
+            "mode": "cors",
+            "credentials": "include"
+            }).then(res => res.text())
+     }
+    searchMovieUrl(keyword, filters, page) { return null }
+    searchMoviesParse(doc) { return this.popularMoviesParse(doc) }
+    searchMovieSelector() { return null }
+    searchMovieFromElement(e) { return null }
+
+
+    // MOVIE DETAIL
+    movieDetailParse(doc) { return {} }
+    relatedMoviesParse(doc) { return null }
+
+    // EPISODES
+    firstEpisodeUrl(doc) { return null }
+    episodesParse(doc) { return [{ title: "Xem ngay", url: doc.location.href }] }
+    episodeSelector() { return null }
+    episodeFromElement(e) { return null }
+
+    // PLAYER
+    moviePlayerSelector() { return "video" }
+    moviePlayerContainerSelector() { return "#videoWatch" }
+    onMoviePageLoadedJavascript() { return null }
+
+    movieServerSelector() { return ".change-server-select" }
+}
+
 // ============================
 // #endregion
 // ============================
@@ -1501,7 +1634,10 @@ class Engine {
         const promise = new Promise((resolve, reject) => {
             this.currentLatestMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.latestMovieUrl(this.currentLatestMoviesPage), this.source.needBypassIframe);
+            let webLoadingPromise = this.source.latestMovieRequest(this.currentLatestMoviesPage);
+            if (!webLoadingPromise) {
+                webLoadingPromise = webView.loadUrl(this.source.latestMovieUrl(this.currentLatestMoviesPage), this.source.needBypassIframe);
+            }
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.latestMoviesParse(doc)
                 if (movieList == null) {
@@ -1526,7 +1662,10 @@ class Engine {
         const promise = new Promise((resolve, reject) => {
             this.currentPopularMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.popularMovieUrl(this.currentPopularMoviesPage), this.source.needBypassIframe);
+            let webLoadingPromise = this.source.popularMovieRequest(this.currentPopularMoviesPage);
+            if (!webLoadingPromise) {
+                webLoadingPromise = webView.loadUrl(this.source.popularMovieUrl(this.currentPopularMoviesPage), this.source.needBypassIframe);
+            }
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.popularMoviesParse(doc)
                 if (movieList == null) {
@@ -1557,7 +1696,10 @@ class Engine {
             }
             this.currentSearchMoviesPage++;
             const webView = new WebView();
-            const webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, filters, this.currentSearchMoviesPage), this.source.needBypassIframe);
+            let webLoadingPromise = this.source.searchMovieRequest(keyword, filters, this.currentSearchMoviesPage);
+            if (!webLoadingPromise) {
+                webLoadingPromise = webView.loadUrl(this.source.searchMovieUrl(keyword, filters, this.currentSearchMoviesPage), this.source.needBypassIframe);
+            }
             webLoadingPromise.then((doc) => {
                 var movieList = this.source.searchMoviesParse(doc)
                 if (movieList == null) {
@@ -2218,6 +2360,7 @@ const SUPPORTED_SOURCES =[
     new Animet(),
     new Phimmoi(),
     new Rophim(),
+    new Shin404()
 ].reduce((acc, source) => {
     acc[new URL(source.baseUrl).host] = source;
     acc[source.name] = source;
@@ -2233,7 +2376,7 @@ if (window.self == window.top) {
     var source = SUPPORTED_SOURCES[location.host] || SUPPORTED_SOURCES[sourceFromUrl];
     if (source) {
         addMainStyle();
-        addMainScript();
+        addMainTemplate();
         runCommonScript();
 
         loadDataFromSharedStorage(':SETTING', undefined).then((setting) => {
@@ -2254,9 +2397,11 @@ if (window.self == window.top) {
 
         // Create main screen container
         // Wait for DOM to be loaded, because it needs to be in the body
-        document.addEventListener("DOMContentLoaded", () => {
-            const mainScreen = new MainScreen(engine, null);
-            mainScreen.show();
+        ["DOMContentLoaded", "MainTemplateLoaded"].forEach(event => {
+            document.addEventListener(event, () => {
+                const mainScreen = new MainScreen(engine, null);
+                mainScreen.show();
+            });
         });
 
         // Listen for messages from the iframe
