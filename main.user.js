@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.43.30
+// @version      1.0.44
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.43";
+const VERSION = "1.0.44";
 
 // ============================
 // #region TEMPLATE HTML
@@ -471,7 +471,7 @@ const STYLES = /* css */ `
 
     .float-movie-player {
         position: absolute;
-        top: max(10dvh, 10dvw);
+        top: calc(50dvh - min(40dvh, 40dvw));
         left: 5dvw;
         width: 90dvw;
         height: min(80dvh, 80dvw);
@@ -722,6 +722,9 @@ function addMainTemplate() {
             }
 
             if (document.querySelector('.h-main-container')){
+                // Make player draggable
+                makeFloatMoviePlayerDraggable();
+
                 // Emit event to notify that the main template is loaded
                 document.dispatchEvent(new Event("MainTemplateLoaded"));
             }
@@ -863,6 +866,9 @@ function makeFloatMoviePlayerDraggable() {
 
     // Use pointer events for both mouse and touch
     header.addEventListener('pointerdown', function(e) {
+        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+            return; // Don't drag if clicking on links or buttons
+        }
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
@@ -2394,9 +2400,6 @@ function runCommonScript() {
             }
         });
     }, 1000);
-
-    // Make player draggable
-    makeFloatMoviePlayerDraggable();
 }
 
 // ============================
