@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.43
+// @version      1.0.43.30
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -861,6 +861,7 @@ function makeFloatMoviePlayerDraggable() {
 
     header.style.cursor = 'grab';
 
+    // Use pointer events for both mouse and touch
     header.addEventListener('pointerdown', function(e) {
         isDragging = true;
         startX = e.clientX;
@@ -869,10 +870,11 @@ function makeFloatMoviePlayerDraggable() {
         startLeft = rect.left;
         startTop = rect.top;
         document.body.style.userSelect = 'none';
+        header.setPointerCapture(e.pointerId);
         header.style.cursor = 'grabbing';
     });
 
-    document.addEventListener('pointermove', function(e) {
+    header.addEventListener('pointermove', function(e) {
         if (!isDragging) return;
         let dx = e.clientX - startX;
         let dy = e.clientY - startY;
@@ -883,13 +885,19 @@ function makeFloatMoviePlayerDraggable() {
         player.style.position = 'fixed';
     });
 
-    document.addEventListener('pointerup', function() {
+    header.addEventListener('pointerup', function(e) {
         if (isDragging) {
             isDragging = false;
             document.body.style.userSelect = '';
+            header.releasePointerCapture(e.pointerId);
             header.style.cursor = 'grab';
         }
     });
+
+    // Prevent scrolling while dragging on touch
+    header.addEventListener('touchmove', function(e) {
+        if (isDragging) e.preventDefault();
+    }, { passive: false });
 }
 
 // ============================
