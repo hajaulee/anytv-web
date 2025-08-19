@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.43.22
+// @version      1.0.43
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -35,11 +35,11 @@ const MAIN_TEMPLATE = /* html */ `
                 </div>
             </div>
             <div class="content-container">
-                <h2 class="category-header">Yêu thích</h2>
+                <h2 class="category-header">Thích</h2>
                 <div id="favorite-movies" class="movie-list"></div>
-                <h2 class="category-header">Mới cập nhật</h2>
+                <h2 class="category-header">Mới</h2>
                 <div id="latest-movies" class="movie-list"></div>
-                <h2 class="category-header">Phổ biến</h2>
+                <h2 class="category-header">Hot</h2>
                 <div id="popular-movies" class="movie-list"></div>
             </div>
         </div>
@@ -471,10 +471,10 @@ const STYLES = /* css */ `
 
     .float-movie-player {
         position: absolute;
-        top: 10dvh;
-        left: 10dvw;
-        width: 80dvw;
-        height: 80dvh;
+        top: max(10dvh, 10dvw);
+        left: 5dvw;
+        width: 90dvw;
+        height: min(80dvh, 80dvw);
         border-radius: 20px;
         overflow: hidden;
         background-color: rgba(0, 0, 0, 0.7);
@@ -483,6 +483,7 @@ const STYLES = /* css */ `
 
     .player-header {
         padding-left: 10px;
+        cursor: grab;
     }
 
     #player-title {
@@ -848,6 +849,47 @@ function httpGetSync(url) {
         console.error("Error fetching data:", xhr.statusText);
         return null;
     }
+}
+
+function makeFloatMoviePlayerDraggable() {
+    const player = document.querySelector('.float-movie-player');
+    const header = document.querySelector('.player-header');
+    if (!player || !header) return;
+
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+
+    header.style.cursor = 'grab';
+
+    header.addEventListener('pointerdown', function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = player.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        document.body.style.userSelect = 'none';
+        header.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('pointermove', function(e) {
+        if (!isDragging) return;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+        player.style.left = (startLeft + dx) + 'px';
+        player.style.top = (startTop + dy) + 'px';
+        player.style.right = '';
+        player.style.bottom = '';
+        player.style.position = 'fixed';
+    });
+
+    document.addEventListener('pointerup', function() {
+        if (isDragging) {
+            isDragging = false;
+            document.body.style.userSelect = '';
+            header.style.cursor = 'grab';
+        }
+    });
 }
 
 // ============================
@@ -2344,6 +2386,9 @@ function runCommonScript() {
             }
         });
     }, 1000);
+
+    // Make player draggable
+    makeFloatMoviePlayerDraggable();
 }
 
 // ============================
