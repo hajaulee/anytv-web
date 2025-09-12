@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.44
+// @version      1.0.45
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.44";
+const VERSION = "1.0.45";
 
 // ============================
 // #region TEMPLATE HTML
@@ -26,6 +26,7 @@ const MAIN_TEMPLATE = /* html */ `
                 <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
                 <span style="flex: 1 1 auto"></span>
                 <button id="open-search-button" class="icon-button">🔍</button>
+                <button id="main-refresh-button" class="icon-button">↻</button>
                 <div class="menu-container">
                     <button id="open-menu-button"class="icon-button">⋮</button>
                     <div class="menu" id="main-menu">
@@ -1909,11 +1910,15 @@ class BaseScreen {
 class MainScreen extends BaseScreen {
 
     init() {
+        this.refreshing = false;
+
+
         this.screenContent = document.getElementById("main-screen");
         this.favoriteMoviesDiv = document.getElementById("favorite-movies");
         this.latestMoviesDiv = document.getElementById("latest-movies");
         this.popularMoviesDiv = document.getElementById("popular-movies");
         this.searchButton = document.getElementById("open-search-button");
+        this.refreshButton = document.getElementById("main-refresh-button");
         this.menuButton = document.getElementById("open-menu-button");
         this.mainMenu = document.getElementById("main-menu");
         this.openSettingButton = document.getElementById("open-setting-btn");
@@ -1922,6 +1927,24 @@ class MainScreen extends BaseScreen {
         this.searchButton.onclick = (e) => {
             this.gotoSearchSreen();
         };
+        this.refreshButton.onclick = (e) => {
+            if (this.refreshing) {
+                return;
+            }
+            this.refreshing = true;
+            this.engine.currentLatestMoviesPage--;
+            this.engine.currentPopularMoviesPage--;
+            toastMsg("Đang tải lại danh sách phim...");
+            Promise.all([
+                this.engine.getFavoriteMovies(),
+                this.engine.getPopularMovies(),
+                this.engine.getLatestMovies()
+            ]).then(() => {
+                this.update()
+                this.refreshing = false;
+                toastMsg("Đã tải lại danh sách phim.");
+            });
+        }
         this.menuButton.onclick = (e) => {
             this.mainMenu.style.display = this.mainMenu.style.display == 'block' ? 'none' : 'block';
         };
