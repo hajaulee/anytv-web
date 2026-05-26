@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.46.2
+// @version      1.0.46.6
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -37,6 +37,18 @@ const MAIN_TEMPLATE = /* html */ `
                 </div>
             </div>
             <div class="content-container">
+                <div id="portrait-tabs" style="display: none">
+                    <div class="tabs-header">
+                        <button class="tab-button" data-target="tab-favorite">Thích</button>
+                        <button class="tab-button" data-target="tab-latest">Mới</button>
+                        <button class="tab-button" data-target="tab-popular">Hot</button>
+                    </div>
+                    <div class="tabs-content">
+                        <div id="tab-favorite" class="tab-panel"></div>
+                        <div id="tab-latest" class="tab-panel" style="display:none"></div>
+                        <div id="tab-popular" class="tab-panel" style="display:none"></div>
+                    </div>
+                </div>
                 <h2 class="category-header">Thích</h2>
                 <div id="favorite-movies" class="movie-list"></div>
                 <h2 class="category-header">Mới</h2>
@@ -246,12 +258,16 @@ const STYLES = /* css */ `
         overflow: hidden;
         text-shadow: 1px 1px 2px #252728;
         font-size: 16px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .movie-genres {
         padding: 2px 5px;
         overflow: hidden;
         font-size: 12px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .menu-container {
@@ -630,6 +646,17 @@ const STYLES = /* css */ `
         50%, 75%, 84%, 92% { transform: rotate(-0.5deg) }
         0%, 50%, 100%  { transform: rotate(0) }
       }
+    /* Portrait tabs styles */
+    #portrait-tabs { display: none; margin: 8px 0; }
+    #portrait-tabs .tabs-header { display:flex; gap:8px; margin-bottom:8px; }
+    #portrait-tabs .tab-button { flex:1; background:#323243; border:0; color:white; padding:8px; border-radius:6px; font-size:16px; }
+    #portrait-tabs .tab-button.active { background: #575757; }
+    #portrait-tabs .tab-panel .movie-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; overflow-y: auto; overflow-x: hidden; height: calc(100dvh - 36px - 72px); white-space: normal; }
+    #portrait-tabs .tab-panel .card-movie { display:block; height: auto; margin-right: 0; }
+    #portrait-tabs .tab-panel .card-movie { width: 100% !important; }
+    #portrait-tabs .load-more-button {
+        width: 100%!important;
+    }
 `;
 
 // ============================
@@ -723,7 +750,7 @@ function addMainTemplate() {
                 document.documentElement.appendChild(templateDiv.firstElementChild);
             }
 
-            if (document.querySelector('.h-main-container')){
+            if (document.querySelector('.h-main-container')) {
                 // Make player draggable
                 makeFloatMoviePlayerDraggable();
 
@@ -746,9 +773,9 @@ async function loadDataFromSharedStorage(key, defaultValue) {
     return new Promise(async (resolve, reject) => {
         try {
             const value = await GM.getValue(key, defaultValue);
-            if (window.anytvSetting){
+            if (window.anytvSetting) {
                 const setting = window.anytvSetting;
-                if (setting.enableSync.value){
+                if (setting.enableSync.value) {
                     const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
                     fetch(url, {
                         method: 'GET',
@@ -764,10 +791,10 @@ async function loadDataFromSharedStorage(key, defaultValue) {
                     }).then(data => {
                         resolve(data ?? value ?? defaultValue);
                     })
-                } else{
+                } else {
                     resolve(value ?? defaultValue);
                 }
-            } else{
+            } else {
                 resolve(value ?? defaultValue);
             }
         } catch (error) {
@@ -780,23 +807,23 @@ async function saveDataToSharedStorage(key, value, skipCheckFrequency) {
     return new Promise((resolve, reject) => {
         try {
             GM.setValue(key, value);
-            if (window.anytvSetting){
+            if (window.anytvSetting) {
                 const setting = window.anytvSetting;
-                if (!skipCheckFrequency){
+                if (!skipCheckFrequency) {
                     if (
                         window.latestSyncTime &&
                         window.latestSyncTime > new Date().getTime() - 60000
                     ) {
                         console.log("Sync running frequency too high.");
                         window.skippedSyncData = {
-                        ...window.skippedSyncData,
+                            ...window.skippedSyncData,
                             [key]: value,
                         }
                         console.log(window.skippedSyncData)
                         return;
                     }
                 }
-                if (setting.enableSync.value){
+                if (setting.enableSync.value) {
                     const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
                     fetch(url, {
                         method: 'PUT',
@@ -809,7 +836,7 @@ async function saveDataToSharedStorage(key, value, skipCheckFrequency) {
                             throw new Error('Network response was not ok');
                         }
                         window.latestSyncTime = new Date().getTime();
-                        if (window.skippedSyncData){
+                        if (window.skippedSyncData) {
                             window.skippedSyncData[key] = null;
                         }
                     })
@@ -822,21 +849,21 @@ async function saveDataToSharedStorage(key, value, skipCheckFrequency) {
     });
 }
 
-function syncDataSyncOnClose(){
+function syncDataSyncOnClose() {
     const setting = window.anytvSetting;
-    if (setting?.enableSync?.value && window.skippedSyncData){
+    if (setting?.enableSync?.value && window.skippedSyncData) {
         Object.keys(window.skippedSyncData).forEach(key => {
             const value = window.skippedSyncData[key];
             if (value) {
                 const url = setting.syncUrl.value + '/' + setting.syncKey.value + '/' + key + '.json';
                 fetch(url, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        keepalive: true,
-                        body: JSON.stringify(value)
-                    }).then();
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    keepalive: true,
+                    body: JSON.stringify(value)
+                }).then();
             }
         })
     }
@@ -867,7 +894,7 @@ function makeFloatMoviePlayerDraggable() {
     header.style.cursor = 'grab';
 
     // Use pointer events for both mouse and touch
-    header.addEventListener('pointerdown', function(e) {
+    header.addEventListener('pointerdown', function (e) {
         if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
             return; // Don't drag if clicking on links or buttons
         }
@@ -882,7 +909,7 @@ function makeFloatMoviePlayerDraggable() {
         header.style.cursor = 'grabbing';
     });
 
-    header.addEventListener('pointermove', function(e) {
+    header.addEventListener('pointermove', function (e) {
         if (!isDragging) return;
         let dx = e.clientX - startX;
         let dy = e.clientY - startY;
@@ -893,7 +920,7 @@ function makeFloatMoviePlayerDraggable() {
         player.style.position = 'fixed';
     });
 
-    header.addEventListener('pointerup', function(e) {
+    header.addEventListener('pointerup', function (e) {
         if (isDragging) {
             isDragging = false;
             document.body.style.userSelect = '';
@@ -903,7 +930,7 @@ function makeFloatMoviePlayerDraggable() {
     });
 
     // Prevent scrolling while dragging on touch
-    header.addEventListener('touchmove', function(e) {
+    header.addEventListener('touchmove', function (e) {
         if (isDragging) e.preventDefault();
     }, { passive: false });
 }
@@ -911,6 +938,82 @@ function makeFloatMoviePlayerDraggable() {
 // ============================
 // #endregion
 // ============================
+
+// Responsive behavior: switch to 3 tabs with 2-column grid on portrait (mobile)
+function initResponsiveTabs() {
+    function ensurePortraitTabs() {
+        const content = document.querySelector('#main-screen .content-container');
+        if (!content) return;
+        const portrait = document.getElementById('portrait-tabs');
+        if (!portrait) return;
+        const fav = document.getElementById('favorite-movies');
+        const lat = document.getElementById('latest-movies');
+        const pop = document.getElementById('popular-movies');
+        const tabFav = document.getElementById('tab-favorite');
+        const tabLat = document.getElementById('tab-latest');
+        const tabPop = document.getElementById('tab-popular');
+        if (!fav || !lat || !pop || !tabFav || !tabLat || !tabPop) return;
+
+        const isPortrait = window.innerHeight > window.innerWidth;
+        if (isPortrait) {
+            portrait.style.display = 'block';
+            // hide headers
+            content.querySelectorAll('.category-header').forEach(h => h.style.display = 'none');
+            // move lists into tabs (preserve if already moved)
+            if (!tabFav.contains(fav)) tabFav.appendChild(fav);
+            if (!tabLat.contains(lat)) tabLat.appendChild(lat);
+            if (!tabPop.contains(pop)) tabPop.appendChild(pop);
+            // ensure an active tab is selected and panels visibility
+            let activeBtn = document.querySelector('#portrait-tabs .tab-button.active');
+            if (!activeBtn) {
+                const firstBtn = document.querySelector('#portrait-tabs .tab-button');
+                if (firstBtn) firstBtn.classList.add('active');
+                document.querySelectorAll('#portrait-tabs .tab-panel').forEach(p => p.style.display = 'none');
+                const firstPanel = document.getElementById(firstBtn?.dataset.target || 'tab-favorite');
+                if (firstPanel) firstPanel.style.display = 'block';
+            }
+        } else {
+            portrait.style.display = 'none';
+            // show headers
+            content.querySelectorAll('.category-header').forEach(h => h.style.display = 'block');
+            // move lists back to original order after their headers
+            const headers = Array.from(content.querySelectorAll('.category-header'));
+            const favHeader = headers.find(h => h.textContent.trim() === 'Thích');
+            const latHeader = headers.find(h => h.textContent.trim() === 'Mới');
+            const popHeader = headers.find(h => h.textContent.trim() === 'Hot');
+            if (favHeader) favHeader.after(fav);
+            else content.appendChild(fav);
+            if (latHeader) latHeader.after(lat);
+            else content.appendChild(lat);
+            if (popHeader) popHeader.after(pop);
+            else content.appendChild(pop);
+        }
+    }
+
+    // tab button click handling
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest && e.target.closest('.tab-button');
+        if (!btn) return;
+        const target = btn.dataset.target;
+        if (!target) return;
+        document.querySelectorAll('#portrait-tabs .tab-button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('#portrait-tabs .tab-panel').forEach(p => p.style.display = 'none');
+        const panel = document.getElementById(target);
+        if (panel) panel.style.display = 'block';
+    });
+
+    // react to size changes
+    window.addEventListener('resize', ensurePortraitTabs);
+    window.addEventListener('orientationchange', ensurePortraitTabs);
+
+    // initialize
+    setTimeout(ensurePortraitTabs, 300);
+}
+
+// initialize responsive tabs when main template is ready
+document.addEventListener('MainTemplateLoaded', initResponsiveTabs);
+
 
 
 // ============================
@@ -1388,7 +1491,7 @@ class Rophim extends BaseSource {
     latestMoviesParse(doc) {
         const jsonData = doc.querySelector("body").textContent;
         const data = JSON.parse(jsonData);
-        if (data.result.items){
+        if (data.result.items) {
             return data.result.items.map(it => {
 
                 return {
@@ -1458,7 +1561,7 @@ class Shin404 extends BaseSource {
     baseUrl = "https://www.shin404.com/";
 
     // POPULAR MOVIES
-    popularMovieRequest(page) { 
+    popularMovieRequest(page) {
         return fetch(`${this.baseUrl}/home?category=movie`, {
             "headers": {
                 "accept": "text/x-component",
@@ -1475,10 +1578,10 @@ class Shin404 extends BaseSource {
             "method": "POST",
             "mode": "cors",
             "credentials": "include"
-            }).then(res => res.text())
-     }
+        }).then(res => res.text())
+    }
     popularMovieUrl(page) { return null }
-    popularMoviesParse(doc) { 
+    popularMoviesParse(doc) {
         const data = JSON.parse(doc.trim().split("\n")[1].slice(2));
         return data?.data?.items?.map(item => ({
             title: item.title,
@@ -1488,13 +1591,13 @@ class Shin404 extends BaseSource {
             latestEpisode: null,
             description: "",
             genres: [""],
-        })) ?? []; 
+        })) ?? [];
     }
     popularMovieSelector() { return null }
     popularMovieFromElement(e) { return null }
 
     // LATEST MOVIES
-    latestMovieRequest(page) { 
+    latestMovieRequest(page) {
         return fetch(`${this.baseUrl}/home?category=newest`, {
             "headers": {
                 "accept": "text/x-component",
@@ -1511,8 +1614,8 @@ class Shin404 extends BaseSource {
             "method": "POST",
             "mode": "cors",
             "credentials": "include"
-            }).then(res => res.text())
-     }
+        }).then(res => res.text())
+    }
     latestMovieUrl(page) { return null }
     latestMoviesParse(doc) { return this.popularMoviesParse(doc) }
     latestMovieSelector() { return null }
@@ -1520,7 +1623,7 @@ class Shin404 extends BaseSource {
 
     // SEARCH MOVIES
     filterConfig() { return null }
-    searchMovieRequest(keyword, filters, page) { 
+    searchMovieRequest(keyword, filters, page) {
         return fetch(`${this.baseUrl}/home/home?title=${keyword?.replace(/ /g, '+')}`, {
             "headers": {
                 "accept": "text/x-component",
@@ -1537,8 +1640,8 @@ class Shin404 extends BaseSource {
             "method": "POST",
             "mode": "cors",
             "credentials": "include"
-            }).then(res => res.text())
-     }
+        }).then(res => res.text())
+    }
     searchMovieUrl(keyword, filters, page) { return null }
     searchMoviesParse(doc) { return this.popularMoviesParse(doc) }
     searchMovieSelector() { return null }
@@ -1650,7 +1753,7 @@ class Engine {
 
         // Update lastEpisode if it is greater than the one in the pool
         if (movie.latestEpisode && movieInPool.latestEpisode) {
-            if(Number(movieInPool.latestEpisode) < Number(movie.latestEpisode)) {
+            if (Number(movieInPool.latestEpisode) < Number(movie.latestEpisode)) {
                 movieInPool.latestEpisode = movie.latestEpisode;
             }
         }
@@ -1836,8 +1939,8 @@ class Engine {
 
     async getFavoriteMovies() {
         if (!this.favoriteMovies.length) {
-            let favoriteMoviesData = await loadDataFromSharedStorage( this.source.name + ':FAVORITE_MOVIES', []);
-            if (typeof(favoriteMoviesData) == 'string'){
+            let favoriteMoviesData = await loadDataFromSharedStorage(this.source.name + ':FAVORITE_MOVIES', []);
+            if (typeof (favoriteMoviesData) == 'string') {
                 favoriteMoviesData = JSON.parse(favoriteMoviesData);
             }
             this.favoriteMovies = favoriteMoviesData
@@ -2082,7 +2185,7 @@ class SettingScreen extends BaseScreen {
 
 
         loadDataFromSharedStorage(':SETTING', this.defaultSetting).then((setting) => {
-            if (typeof(setting) == 'string'){
+            if (typeof (setting) == 'string') {
                 setting = JSON.parse(setting);
             }
             this.setting = setting;
@@ -2419,7 +2522,7 @@ function runCommonScript() {
         Array.from(document.getElementsByTagName("video")).forEach((element) => {
 
             // Check if the video is an advertisement by duration threshold
-            if (element.duration < DURATION_THRESHOLD){
+            if (element.duration < DURATION_THRESHOLD) {
                 if (element.currentTime < element.duration) {
                     console.log("Skipped an ads!!!!");
                     element.muted = true;
@@ -2441,7 +2544,7 @@ function runCommonScript() {
 // #region MAIN FRAME
 // ============================
 
-const SUPPORTED_SOURCES =[
+const SUPPORTED_SOURCES = [
     new Animet(),
     new Phimmoi(),
     new Rophim(),
@@ -2465,8 +2568,8 @@ if (window.self == window.top) {
         runCommonScript();
 
         loadDataFromSharedStorage(':SETTING', undefined).then((setting) => {
-            if (setting){
-                if (typeof(setting) == 'string'){
+            if (setting) {
+                if (typeof (setting) == 'string') {
                     setting = JSON.parse(setting);
                 }
                 window.anytvSetting = setting;
@@ -2551,22 +2654,22 @@ if (window.self != window.top) {
                 }, 1000);
 
                 // Handle video container
-                if (source.moviePlayerContainerSelector()){
+                if (source.moviePlayerContainerSelector()) {
                     var videoContainerTimer = setIntervalImmediate(() => {
                         let videoContainer = document.querySelector(source.moviePlayerContainerSelector());
                         if (videoContainer) {
                             clearInterval(videoContainerTimer);
-                            videoContainer.style.width= "100dvw";
-                            videoContainer.style.height= "calc(100dvh - 29px)";
-                            videoContainer.style.position= "fixed";
-                            videoContainer.style.zIndex= 9999;
-                            videoContainer.style.left= 0;
-                            videoContainer.style.top= "29px";
+                            videoContainer.style.width = "100dvw";
+                            videoContainer.style.height = "calc(100dvh - 29px)";
+                            videoContainer.style.position = "fixed";
+                            videoContainer.style.zIndex = 9999;
+                            videoContainer.style.left = 0;
+                            videoContainer.style.top = "29px";
                             videoContainer.style.background = "black";
 
                             let parent = videoContainer.parentElement
-                            while (parent && parent != document.body){
-                                parent.style.zIndex= 9999;
+                            while (parent && parent != document.body) {
+                                parent.style.zIndex = 9999;
                                 parent = parent.parentElement;
                             }
 
@@ -2603,10 +2706,10 @@ if (window.self != window.top) {
                     Array.from(document.getElementsByTagName("video")).forEach((element) => {
 
                         // Main video
-                        if (element.duration > DURATION_THRESHOLD){
+                        if (element.duration > DURATION_THRESHOLD) {
 
                             // Stop video when it is finished to prevent auto-play next video
-                            if (element.currentTime > element.duration - 1){
+                            if (element.currentTime > element.duration - 1) {
                                 element.pause();
                             }
 
@@ -2636,26 +2739,26 @@ if (window.self != window.top) {
 
 if (["hajaulee.github.io"].includes(location.host)) {
     fetch("main.user.js")
-            .then(response => response.text())
-            .then(data => {
-                const latestVersion = data.match(/VERSION.*".*"/)[0].slice(11, -1);
-                window.ANYTVWEB_LATEST_VERSION = latestVersion;
-                addMainStyle();
-                // Add only snackbar to the page
-                document.body.appendChild(createDom("<div id='snackbar'></div>"));
+        .then(response => response.text())
+        .then(data => {
+            const latestVersion = data.match(/VERSION.*".*"/)[0].slice(11, -1);
+            window.ANYTVWEB_LATEST_VERSION = latestVersion;
+            addMainStyle();
+            // Add only snackbar to the page
+            document.body.appendChild(createDom("<div id='snackbar'></div>"));
 
-                if (window.ANYTVWEB_LATEST_VERSION) {
-                    const parsedVersion = VERSION.split('.').map(Number);
-                    const latestVersion = window.ANYTVWEB_LATEST_VERSION.split('.').map(Number);
-                    const isNewerVersion = latestVersion.some((num, index) => num > (parsedVersion[index] || 0));
-                    if (isNewerVersion) {
-                        toastMsg("Có phiên bản mới: " + window.ANYTVWEB_LATEST_VERSION);
-                    } else {
-                        console.log("Phiên bản mới nhất: " + VERSION);
-                    }
+            if (window.ANYTVWEB_LATEST_VERSION) {
+                const parsedVersion = VERSION.split('.').map(Number);
+                const latestVersion = window.ANYTVWEB_LATEST_VERSION.split('.').map(Number);
+                const isNewerVersion = latestVersion.some((num, index) => num > (parsedVersion[index] || 0));
+                if (isNewerVersion) {
+                    toastMsg("Có phiên bản mới: " + window.ANYTVWEB_LATEST_VERSION);
+                } else {
+                    console.log("Phiên bản mới nhất: " + VERSION);
                 }
-            })
-            .catch(error => console.error('Error fetching the script:', error));
+            }
+        })
+        .catch(error => console.error('Error fetching the script:', error));
 
 }
 
