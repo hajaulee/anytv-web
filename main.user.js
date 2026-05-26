@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Simple player
 // @namespace    http://hajaulee.github.io/anytv-web/
-// @version      1.0.45
+// @version      1.0.46.2
 // @description  A simpler player for movie webpage.
 // @author       Haule
 // @match        https://*/*
@@ -11,7 +11,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
-const VERSION = "1.0.45";
+const VERSION = "1.0.46";
 
 // ============================
 // #region TEMPLATE HTML
@@ -25,6 +25,7 @@ const MAIN_TEMPLATE = /* html */ `
             <div class="header">
                 <button class="icon-button" onclick="location.href='https://hajaulee.github.io/anytv-web/'">〈</button>
                 <span style="flex: 1 1 auto"></span>
+                <button id="open-original-button" class="icon-button">🌐</button>
                 <button id="open-search-button" class="icon-button">🔍</button>
                 <button id="main-refresh-button" class="icon-button">↻</button>
                 <div class="menu-container">
@@ -968,7 +969,7 @@ class Animet extends BaseSource {
 
     name = "Animet";
     thumbnailRatio = 0.75;
-    baseUrl = "https://anime7.site";
+    baseUrl = "https://anime14.site";
 
     // POPULAR MOVIES
     popularMovieUrl(page) {
@@ -1917,6 +1918,7 @@ class MainScreen extends BaseScreen {
         this.favoriteMoviesDiv = document.getElementById("favorite-movies");
         this.latestMoviesDiv = document.getElementById("latest-movies");
         this.popularMoviesDiv = document.getElementById("popular-movies");
+        this.originalWebsiteButton = document.getElementById("open-original-button");
         this.searchButton = document.getElementById("open-search-button");
         this.refreshButton = document.getElementById("main-refresh-button");
         this.menuButton = document.getElementById("open-menu-button");
@@ -1947,6 +1949,10 @@ class MainScreen extends BaseScreen {
         }
         this.menuButton.onclick = (e) => {
             this.mainMenu.style.display = this.mainMenu.style.display == 'block' ? 'none' : 'block';
+        };
+
+        this.originalWebsiteButton.onclick = (e) => {
+            document.querySelector(".h-main-container").style.display = 'none';
         };
 
         this.openSettingButton.onclick = (e) => {
